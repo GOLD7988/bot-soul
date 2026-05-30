@@ -4,7 +4,7 @@
   "description": "Dead by Daylight Discord Bot 🔪",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node bot.js",
     "dev": "nodemon index.js"
   },
   "dependencies": {
