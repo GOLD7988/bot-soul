@@ -62,7 +62,8 @@ const triviaQuestions = [
 { q: “اسم العملة في DBD؟”, a: “bloodpoints”, hint: “نقاط دم” },
 { q: “كم سرفايفر في كل مباراة؟”, a: “4”, hint: “اقل من 5 واكثر من 3” },
 { q: “قوة ذا نيرس؟”, a: “blink”, hint: “تقفز من خلال الجدران” },
-{ q: “الكيلر من Resident Evil؟”, a: “nemesis”, hint: “تي-فيروس” },{ q: “ما هو البيرك اللي يخليك تقوم لوحدك؟”, a: “unbreakable”, hint: “انبريكبل” },
+{ q: “الكيلر من Resident Evil؟”, a: “nemesis”, hint: “تي-فيروس” },
+{ q: “ما هو البيرك اللي يخليك تقوم لوحدك؟”, a: “unbreakable”, hint: “انبريكبل” },
 { q: “كم مولد يتحجب مع كوراپت انترفينشن؟”, a: “3”, hint: “ثلاث” },
 { q: “ما اسم الكيلر اللي يرمي فؤوس؟”, a: “huntress”, hint: “هنتريس” },
 { q: “ما اسم الكيلر من Stranger Things؟”, a: “demogorgon”, hint: “ديموقورقون” },
@@ -152,7 +153,9 @@ const speedRaceWords = [
 “نيميسيس”, “چاكي”, “اوني”, “ليجن”, “كلاون”,
 “ديد هارد”, “نود”, “باربيكيو”, “انبريكبل”, “هيكس رين”,
 “بلودپوينتس”, “سرفايفر”, “مولد”, “هوك”, “پالت”,
-];// ═══════════════════════════════════════
+];
+
+// ═══════════════════════════════════════
 //        STORAGE
 // ═══════════════════════════════════════
 
@@ -339,7 +342,7 @@ if (cmd === “menu” || cmd === “play”) {
 return msg.reply({ embeds: [menuEmbed()], components: [menuRow1(), menuRow2()] });
 }
 if (cmd === “help”) {
-return msg.reply({ embeds: [new EmbedBuilder().setColor(0xB22222).setTitle(“SOUL DBD Bot - الاوامر”).setDescription(“اكتب !menu لتفتح القائمة الكاملة بالازرار\n\nاو الاوامر المباشرة:\n`!trivia` !scramble !missing !speed !chase`\n!killer` !killers !perk !perks !build `!lb`”).setFooter({ text: “SOUL DBD | The Entity is watching” })] });
+return msg.reply({ embeds: [new EmbedBuilder().setColor(0xB22222).setTitle(“SOUL DBD Bot - الاوامر”).setDescription(“اكتب **!menu** لتفتح القائمة الكاملة بالازرار\n\nاو الاوامر المباشرة:\n`!trivia` `!scramble` `!missing` `!speed` `!chase`\n`!killer` `!killers` `!perk` `!perks` `!build` `!lb`”).setFooter({ text: “SOUL DBD | The Entity is watching” })] });
 }
 if (cmd === “trivia”) return startTrivia(msg.channel, (r) => msg.reply(r));
 if (cmd === “scramble”) return startScramble(msg.channel, (r) => msg.reply(r));
@@ -364,7 +367,7 @@ return msg.reply({ embeds: [new EmbedBuilder().setColor(p.type === “killer” 
 if (cmd === “perks”) {
 const s = perks.filter(p => p.type === “survivor”);
 const k = perks.filter(p => p.type === “killer”);
-return msg.reply({ embeds: [new EmbedBuilder().setColor(0xFF8C00).setTitle(“قائمة البيركات - SOUL DBD”).addFields({ name: “بيركات السرفايفر”, value: s.map(p => p.emoji + “ ” + p.name + “ - “ + p.desc).join(”\n”) }, { name: “بيركات الكيلر”, value: k.map(p => p.emoji + “ ” + p.name + “ - “ + p.desc).join(”\n”) })] });
+return msg.reply({ embeds: [new EmbedBuilder().setColor(0xFF8C00).setTitle(“قائمة البيركات - SOUL DBD”).addFields({ name: “بيركات السرفايفر”, value: s.map(p => p.emoji + “ **” + p.name + “** - “ + p.desc).join(”\n”) }, { name: “بيركات الكيلر”, value: k.map(p => p.emoji + “ **” + p.name + “** - “ + p.desc).join(”\n”) })] });
 }
 if (cmd === “build”) {
 const type = args[1] === “killer” ? “killer” : “survivor”;
@@ -373,10 +376,11 @@ const picked = [];
 while (picked.length < 4 && pool.length > 0) picked.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
 return msg.reply({ embeds: [new EmbedBuilder().setColor(type === “killer” ? 0xB22222 : 0xFF8C00).setTitle(“بيلد “ + (type === “killer” ? “كيلر” : “سرفايفر”) + “ عشوائي!”).setDescription(picked.map((p, i) => (i + 1) + “. “ + p.emoji + “ **” + p.name + “**\n” + p.desc).join(”\n\n”))] });
 }
-if (cmd === “lb” || cmd === “leaderboard”) {const sorted = […lb.values()].sort((a, b) => b.pts - a.pts).slice(0, 10);
+if (cmd === “lb” || cmd === “leaderboard”) {
+const sorted = […lb.values()].sort((a, b) => b.pts - a.pts).slice(0, 10);
 if (!sorted.length) return msg.reply(“اللوحة فارغة! العب اي لعبة لتجمع نقاط.”);
 const medals = [“🥇”, “🥈”, “🥉”];
-return msg.reply({ embeds: [new EmbedBuilder().setColor(0xFFD700).setTitle(“لوحة المتصدرين - SOUL DBD”).setDescription(sorted.map((p, i) => (medals[i] || (i + 1) + “.”) + “ ” + p.name + “ - “ + p.pts + “ نقطة”).join(”\n”))] });
+return msg.reply({ embeds: [new EmbedBuilder().setColor(0xFFD700).setTitle(“لوحة المتصدرين - SOUL DBD”).setDescription(sorted.map((p, i) => (medals[i] || (i + 1) + “.”) + “ **” + p.name + “** - “ + p.pts + “ نقطة”).join(”\n”))] });
 }
 });
 
@@ -412,7 +416,7 @@ return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xB22222).setTit
 if (id === “m_perks”) {
 const s = perks.filter(p => p.type === “survivor”);
 const k = perks.filter(p => p.type === “killer”);
-return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xFF8C00).setTitle(“قائمة البيركات - SOUL DBD”).addFields({ name: “بيركات السرفايفر”, value: s.map(p => p.emoji + “ ” + p.name + “ - “ + p.desc).join(”\n”) }, { name: “بيركات الكيلر”, value: k.map(p => p.emoji + “ ” + p.name + “ - “ + p.desc).join(”\n”) })], ephemeral: true });
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xFF8C00).setTitle(“قائمة البيركات - SOUL DBD”).addFields({ name: “بيركات السرفايفر”, value: s.map(p => p.emoji + “ **” + p.name + “** - “ + p.desc).join(”\n”) }, { name: “بيركات الكيلر”, value: k.map(p => p.emoji + “ **” + p.name + “** - “ + p.desc).join(”\n”) })], ephemeral: true });
 }
 
 if (id === “m_build”) {
@@ -424,7 +428,7 @@ return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xFF8C00).setTit
 
 if (id === “m_lb”) {
 const sorted = […lb.values()].sort((a, b) => b.pts - a.pts).slice(0, 10);
-return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xFFD700).setTitle(“لوحة المتصدرين - SOUL DBD”).setDescription(sorted.length ? sorted.map((p, i) => ([“🥇”, “🥈”, “🥉”][i] || (i + 1) + “.”) + “ ” + p.name + “ - “ + p.pts + “ نقطة”).join(”\n”) : “اللوحة فارغة!”)], ephemeral: true });
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(0xFFD700).setTitle(“لوحة المتصدرين - SOUL DBD”).setDescription(sorted.length ? sorted.map((p, i) => ([“🥇”, “🥈”, “🥉”][i] || (i + 1) + “.”) + “ **” + p.name + “** - “ + p.pts + “ نقطة”).join(”\n”) : “اللوحة فارغة!”)], ephemeral: true });
 }
 
 // Chase buttons
