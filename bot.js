@@ -14,9 +14,9 @@ const client = new Client({
 
 // ─── PREMIUM THEME (IMAGE & TRANSPARENT COLOR) ───────────────────────────────
 const LOGO = "https://cdn.discordapp.com/attachments/1510327104041127959/1510647569435332658/IMG_0059.jpg";
-const DISCORD_BG = 0x2B2D31; // لون ديسكورد السري يجعل القوائم شفافة وتطفو بالكامل
+const DISCORD_BG = 0x2B2D31; // لون ديسكورد الداكن المدمج لشفافية كاملة
 
-// ─── ADVANCED QUESTION BANK (MULTIPLE SLANG & ENGLISH REGISTER) ──────────────
+// ─── ADVANCED QUESTION BANK ──────────────────────────────────────────────────
 const dbdQuestions = [
   {
     q: "ما هو البيرك التعليمي (Teachable) لـ ديفيد كينج الذي يعطيك ميزة الاندفاع وحماية ضد الضربات وأنت مصاب؟",
@@ -51,15 +51,14 @@ const missingWords = [
   { answers: ["سيلف كير", "سيلف كير", "self care", "سلف كير"],    hint: "بيرك كلوديت لمعالجة النفس بدون اسعافات", display: "سـ_ـلـ_ـف كـ_ـيـ_ر" }
 ];
 
-// ─── CORE DATABASE SYSTEM (RPG DATA) ─────────────────────────────────────────
-const db = new Collection(); // قاعدة بيانات حفظ اللاعبين المؤقتة (تصفير مع إعادة التشغيل)
+// ─── RPG DATA SYSTEM ─────────────────────────────────────────────────────────
+const db = new Collection(); 
 
 function getPlayer(id, username) {
   if (!db.has(id)) {
     db.set(id, { id, name: username, pts: 100, rank: "ناجي مبتدئ 🏃" });
   }
   const player = db.get(id);
-  // تحديث الرتبة ديناميكياً حسب النقاط
   if (player.pts >= 1500) player.rank = "مختار الكيان 👁️🔥";
   else if (player.pts >= 800) player.rank = "سيد الضباب 🌫️🏆";
   else if (player.pts >= 400) player.rank = "هارب محترف 🏃⚡";
@@ -68,16 +67,16 @@ function getPlayer(id, username) {
   return player;
 }
 
-// ─── STRING CLEANING ENGINE (الذكاء الاصطناعي لتنظيف ومطابقة الكلمات العشوائية) ───
+// ─── STRING CLEANING ENGINE ──────────────────────────────────────────────────
 function cleanString(str) {
   if (!str) return "";
   return str.toLowerCase()
     .trim()
-    .replace(/[\s_.-]/g, "") // إلغاء المسافات والرموز
-    .replace(/[أإآا]/g, "ا") // توحيد الألف
-    .replace(/ة/g, "ه")     // توحيد التاء المربوطة
-    .replace(/ى/g, "ي")     // توحيد الياء
-    .replace(/^ال/, "");    // تجاهل ال التعريف
+    .replace(/[\s_.-]/g, "") 
+    .replace(/[أإآا]/g, "ا") 
+    .replace(/ة/g, "ه")     
+    .replace(/ى/g, "ي")     
+    .replace(/^ال/, "");    
 }
 
 function matchAnswer(userInput, validAnswers) {
@@ -85,7 +84,7 @@ function matchAnswer(userInput, validAnswers) {
   return validAnswers.some(ans => cleanString(ans) === userClean || userClean.includes(cleanString(ans)));
 }
 
-// ─── DYNAMIC EMBEDS ──────────────────────────────────────────────────────────
+// ─── UI EMBED BUILDERS ───────────────────────────────────────────────────────
 function buildLobbyEmbed(player) {
   return new EmbedBuilder()
     .setColor(DISCORD_BG)
@@ -125,7 +124,15 @@ const activeGames = new Collection();
 client.on("messageCreate", async msg => {
   if (msg.author.bot) return;
 
-  // التحقق الذكي من التحديات النشطة في الشات
+  const contentLower = msg.content.trim().toLowerCase();
+
+  // 1. فحص تشغيل الأوامر أولاً لضمان الاستجابة الفورية وعدم التعليق
+  if (contentLower === "!menu" || contentLower === "!play") {
+    const p = getPlayer(msg.author.id, msg.author.username);
+    return msg.reply({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
+  }
+
+  // 2. فحص إجابات الألعاب النشطة بالشات إذا لم يكن المدخل أمراً للبوت
   const game = activeGames.get(msg.channel.id);
   if (!game) return;
 
@@ -145,14 +152,8 @@ client.on("messageCreate", async msg => {
     p.pts += 50;
     return msg.reply({ embeds: [
       new EmbedBuilder().setColor(DISCORD_BG).setTitle("🔤 تم فك التشفير بنجاح!")
-        .setDescription(`> **${msg.author.username}** أكمل الفراغ وعثر على الكلمة المتطابقة: **${game.data.answers[0]}**\n\n💰 **رصيدك الجديد:** \`${p.pts}\` نقطة`)
+        .setDescription(`> **${msg.author.username}** أعاد بناء الكلمة بنجاح: **${game.data.answers[0]}**\n\n💰 **رصيدك الجديد:** \`${p.pts}\` نقطة`)
     ]});
-  }
-
-  // أوامر التشغيل المباشرة
-  if (msg.content === "!menu" || msg.content === "!play") {
-    const p = getPlayer(msg.author.id, msg.author.username);
-    return msg.reply({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
   }
 });
 
@@ -166,7 +167,7 @@ client.on("interactionCreate", async interaction => {
     return interaction.update({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
   }
 
-  // 1. لعبة الترتيب الفكري (التريفيا المطورة)
+  // لعبة التحدي الفكري
   if (id === "game_trivia") {
     if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ الضباب مشغول بتحدي آخر حالياً!", ephemeral: true });
     
@@ -177,11 +178,11 @@ client.on("interactionCreate", async interaction => {
       new EmbedBuilder().setColor(DISCORD_BG).setTitle("🧠 التحدي الفكري لـ Dead by Daylight")
         .setDescription(`━━━━━━━━━━━━━━━━━━━━━━\n### ${q.q}\n━━━━━━━━━━━━━━━━━━━━━━`)
         .addFields({ name: "💡 تلميح مساعد", value: `||${q.hint}||` })
-        .setFooter({ text: "البوت يستوعب الإجابة بأي لغة أو عامية أو اختصار!" })
+        .setFooter({ text: "يقبل العامية، الفصحى، الإنجليزي، أو الاختصار!" })
     ], components: returnButton() });
   }
 
-  // 2. لعبة الكلمة المفقودة
+  // لعبة الكلمة المفقودة
   if (id === "game_missing") {
     if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ الضباب مشغول بتحدي آخر حالياً!", ephemeral: true });
 
@@ -194,11 +195,11 @@ client.on("interactionCreate", async interaction => {
     ], components: returnButton() });
   }
 
-  // 3. لعبة روليت المخاطرة وكازينو الكيان (The Sacrifice Roulette)
+  // كازينو الكيان وروليت المخاطرة
   if (id === "game_roulette") {
     if (p.pts < 30) return interaction.reply({ content: "❌ رصيدك منخفض جداً للمخاطرة (تحتاج 30 نقطة على الأقل)!", ephemeral: true });
 
-    const win = Math.random() > 0.55; // نسبة الفوز 45% لتعطي حماس وتحدي قاسي
+    const win = Math.random() > 0.55; 
     const bet = 30;
 
     if (win) {
@@ -211,14 +212,14 @@ client.on("interactionCreate", async interaction => {
       p.pts -= bet;
       return interaction.reply({ embeds: [
         new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 روليت الكيان: تم التضحية بك!")
-          .setDescription(`🪝 أمسك بك ذا بلايت وقام بتعليقك على الخطاف مباشرة وتغذى الكيان على طاقة الأمل لديك.\n\n📉 **الخسارة:** \`-${bet}\` نقطة.\n💰 **رصيدك الإجمالي:** \`${p.pts}\``)
+          .setDescription(`🪝 أمسك بك الكيلر وقام بتعليك على الخطاف وتغذى الكيان على طاقة أملك.\n\n📉 **الخسارة:** \`-${bet}\` نقطة.\n💰 **رصيدك الإجمالي:** \`${p.pts}\``)
       ], components: returnButton() });
     }
   }
 
-  // 4. لعبة فحص المهارة التفاعلية الفورية (Skill Check Challenge)
+  // لعبة فحص المهارة (Skill Check)
   if (id === "game_skillcheck") {
-    const randZone = Math.floor(Math.random() * 4); // توليد عشوائي لمنطقة الفوز الفوري
+    const randZone = Math.floor(Math.random() * 4); 
     const row = new ActionRowBuilder().addComponents(
       [0, 1, 2, 3].map(i => new ButtonBuilder()
         .setCustomId(`sk_${i}_${randZone}`)
@@ -233,7 +234,7 @@ client.on("interactionCreate", async interaction => {
     ], components: [row], ephemeral: true });
   }
 
-  // فحص نتيجة زر الـ Skill Check
+  // نتيجة الـ Skill Check
   if (id.startsWith("sk_")) {
     const [, clicked, target] = id.split("_");
     if (clicked === target) {
@@ -251,7 +252,7 @@ client.on("interactionCreate", async interaction => {
     }
   }
 
-  // 5. قائمة المتصدرين بنظام الرتب الاحترافي الجديد
+  // لوحة الصدارة والرتب
   if (id === "game_leaderboard") {
     const sorted = [...db.values()].sort((a, b) => b.pts - a.pts).slice(0, 5);
     const medals = ["🥇", "🥈", "🥉", "🏅", "💀"];
