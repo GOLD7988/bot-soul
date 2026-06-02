@@ -14,9 +14,9 @@ const client = new Client({
 
 // ─── CONSTANTS & FLOATING VISUALS ───────────────────────────────────────────
 const LOGO = "https://cdn.discordapp.com/attachments/1510327104041127959/1510647569435332658/IMG_0059.jpg";
-const DISCORD_BG = 0x2B2D31; // لون ديسكورد الشفاف الفخم
+const DISCORD_BG = 0x2B2D31; 
 
-// ─── ADVANCED QUESTION BANK (صياغة عامية واضحة جداً + إجابات شاملة) ───────────
+// ─── ADVANCED QUESTION BANK ──────────────────────────────────────────────────
 const dbdQuestions = [
   {
     id: 1,
@@ -26,7 +26,7 @@ const dbdQuestions = [
   },
   {
     id: 2,
-    q: "وش اسم الكيان أو الشيء الأسود الخفي اللي يبي التضحيات ويتحكم بالضباب?",
+    q: "وش اسم الكيان أو الشيء الأسود الخفي اللي يبي التضحيات ويتحكم بالضباب؟",
     answers: ["ذا انتيتي", "انتيتي", "the entity", "entity", "الكيان", "الانتيي", "انتتي", "الأنتيتي"],
     hint: "The Entity"
   },
@@ -88,7 +88,6 @@ function getPlayer(id, username) {
   return player;
 }
 
-// ─── STRING CLEANING ENGINE ──────────────────────────────────────────────────
 function cleanString(str) {
   if (!str) return "";
   return str.toLowerCase()
@@ -121,10 +120,11 @@ function lobbyComponents() {
   const row1 = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("game_trivia").setLabel("🧠 تحدي فردي").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("game_typing").setLabel("⌨️ سباق كتابة").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_skillcheck").setLabel("🎯 فحص المهارة (1.5 ثانية)").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("game_skillcheck").setLabel("🎯 فحص المهارة").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("game_roulette").setLabel("🎲 روليت الكيان").setStyle(ButtonStyle.Secondary)
   );
   const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("game_gate").setLabel("🚪 هروب الأبواب").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("queue_join").setLabel("📥 دخول طابور المواجهة [4 لاعبين]").setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId("game_leaderboard").setLabel("🏆 الأساطير").setStyle(ButtonStyle.Secondary)
   );
@@ -137,6 +137,14 @@ function returnButton() {
   )];
 }
 
+// أزرار ما بعد النتيجة لفحص المهارة والألعاب الأخرى
+function postGameButtons(retryCustomId) {
+  return [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(retryCustomId).setLabel("🔄 العب مرة ثانية").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId("go_lobby").setLabel("🏠 القائمة الرئيسية").setStyle(ButtonStyle.Secondary)
+  )];
+}
+
 // ─── MESSAGE HANDLER ─────────────────────────────────────────────────────────
 const activeGames = new Collection(); 
 
@@ -145,13 +153,11 @@ client.on("messageCreate", async msg => {
 
   const contentClean = msg.content.trim().toLowerCase();
 
-  // تفعيل أوامر التشغيل بالعامية (لعب- أو !لعب أو لعب)
   if (["لعب-", "!لعب", "لعب", "play", "!menu"].includes(contentClean)) {
     const p = getPlayer(msg.author.id, msg.author.username);
     return msg.reply({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
   }
 
-  // فحص إجابة المواجهة الجماعية
   if (activeMatch && matchAnswer(msg.content, activeMatch.answers)) {
     const winner = getPlayer(msg.author.id, msg.author.username);
     winner.pts += 100; 
@@ -164,7 +170,6 @@ client.on("messageCreate", async msg => {
     ]});
   }
 
-  // فحص التحدي الفردي
   const game = activeGames.get(msg.channel.id);
   if (!game) return;
 
@@ -178,7 +183,6 @@ client.on("messageCreate", async msg => {
     ]});
   }
 
-  // فحص سباق الكتابة
   if (game.type === "typing" && msg.content.trim() === game.data) {
     activeGames.delete(msg.channel.id);
     const p = getPlayer(msg.author.id, msg.author.username);
@@ -203,12 +207,8 @@ client.on("interactionCreate", async interaction => {
 
   // طابور الـ 4 لاعبين
   if (id === "queue_join") {
-    if (lobbyQueue.has(interaction.user.id)) {
-      return interaction.reply({ content: "⚠️ أنت مسجل بالفعل في طابور الانتظار!", ephemeral: true });
-    }
-    if (activeMatch) {
-      return interaction.reply({ content: "⚠️ هناك مواجهة جماعية قائمة حالياً، انتظر حتى تنتهي!", ephemeral: true });
-    }
+    if (lobbyQueue.has(interaction.user.id)) return interaction.reply({ content: "⚠️ أنت مسجل بالفعل في طابور الانتظار!", ephemeral: true });
+    if (activeMatch) return interaction.reply({ content: "⚠️ هناك مواجهة جماعية قائمة حالياً، انتظر حتى تنتهي!", ephemeral: true });
 
     lobbyQueue.add(interaction.user.id);
     const neededPlayers = 4 - lobbyQueue.size;
@@ -233,22 +233,19 @@ client.on("interactionCreate", async interaction => {
         embeds: [
           new EmbedBuilder().setColor(DISCORD_BG).setTitle("⚔️ مواجهة الـ 4 لاعبين الحماسيّة!")
             .setDescription(`### الأسْرَع في الشات يفوز بـ 100 نقطة:\n\n**${q.q}**`)
-            .setFooter({ text: "يقبل عامي، انقليزي، تعريب، واختصارات!" })
         ]
       });
     }
 
     await interaction.update({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
-    return interaction.followUp({ content: `✅ **تم تسجيلك!** باقي \`[ ${neededPlayers} ]\` لاعبين وتبدأ المواجهة الجماعية.`, ephemeral: true });
+    return interaction.followUp({ content: `✅ **تم تسجيلك!** باقي \`[ ${neededPlayers} ]\` لاعبين وتبدأ المواجهة.`, ephemeral: true });
   }
 
-  // تحدي فردي عشوائي
+  // تحدي فردي
   if (id === "game_trivia") {
     if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ هناك تحدي نشط في الروم حالياً!", ephemeral: true });
-    
     let availableQuestions = dbdQuestions.filter(q => q.id !== lastQuestionId);
     if (availableQuestions.length === 0) availableQuestions = dbdQuestions; 
-
     const q = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
     lastQuestionId = q.id; 
 
@@ -259,22 +256,19 @@ client.on("interactionCreate", async interaction => {
       if (checkGame && checkGame.type === "trivia" && checkGame.data.id === q.id) {
         activeGames.delete(interaction.channel.id);
         interaction.channel.send({ embeds: [
-          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت التحدي الفردي!")
-            .setDescription(`مرت 30 ثانية وما أحد عرف الجواب الصحيح.\n> الإجابة كانت: **${q.answers[0]}**`)
+          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت التحدي الفردي!").setDescription(`مرت 30 ثانية وما حد عرف الجواب الصحيح.\n> الإجابة: **${q.answers[0]}**`)
         ]});
       }
     }, 30000);
 
     return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🧠 تحدي فكري فردي (سؤال عامي)")
-        .setDescription(`### ${q.q}\n\n*عندك 30 ثانية للجواب ⏳*`)
+      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🧠 تحدي فكري فردي (سؤال عامي)").setDescription(`### ${q.q}`)
     ], components: returnButton() });
   }
 
-  // سباق الكتابة السريع
+  // سباق الكتابة
   if (id === "game_typing") {
     if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ هناك تحدي نشط في الروم حالياً!", ephemeral: true });
-
     const txt = typingRaces[Math.floor(Math.random() * typingRaces.length)];
     activeGames.set(interaction.channel.id, { type: "typing", data: txt });
 
@@ -283,41 +277,66 @@ client.on("interactionCreate", async interaction => {
       if (checkGame && checkGame.type === "typing" && checkGame.data === txt) {
         activeGames.delete(interaction.channel.id);
         interaction.channel.send({ embeds: [
-          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت سباق الكتابة!")
-            .setDescription("مرت 30 ثانية وما أحد كتب الجملة بالوقت المحدد.")
+          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت سباق الكتابة!").setDescription("مرت 30 ثانية وما حد كتب الجملة.")
         ]});
       }
     }, 30000);
 
     return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("⌨️ سباق سرعة الكتابة!")
-        .setDescription(`اكتب الجملة هذي بسرعة البرق في الشات:\n\n> **${txt}**\n\n*عندك 30 ثانية للجواب ⏳*`)
+      new EmbedBuilder().setColor(DISCORD_BG).setTitle("⌨️ سباق سرعة الكتابة!").setDescription(`اكتب الجملة هذي بسرعة في الشات:\n\n> **${txt}**`)
     ], components: returnButton() });
   }
 
   // روليت الكيان
   if (id === "game_roulette") {
     if (p.pts < 30) return interaction.reply({ content: "❌ رصيدك منخفض جداً للمخاطرة (تحتاج 30 نقطة)!", ephemeral: true });
-
     const win = Math.random() > 0.55; 
     const bet = 30;
 
     if (win) {
       p.pts += bet * 2;
       return interaction.reply({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("🎲 روليت الكيان: هروب!")
-          .setDescription(`🏃 نجحت في الهروب!\n📈 **الأرباح:** \`+${bet * 2}\`  •  **الرصيد:** \`${p.pts}\``)
-      ], components: returnButton() });
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("🎲 روليت الكيان: هروب!").setDescription(`🏃 نجحت في الهروب!\n📈 **الأرباح:** \`+${bet * 2}\`  •  **الرصيد:** \`${p.pts}\``)
+      ], components: postGameButtons("game_roulette") });
     } else {
       p.pts -= bet;
       return interaction.reply({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 روليت الكيان: تضحية!")
-          .setDescription(`🪝 تم تعليقك على الخطاف.\n📉 **الخسارة:** \`-${bet}\`  •  **الرصيد:** \`${p.pts}\``)
-      ], components: returnButton() });
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 روليت الكيان: تضحية!").setDescription(`🪝 تم تعليقك على الخطاف.\n📉 **الخسارة:** \`-${bet}\`  •  **الرصيد:** \`${p.pts}\``)
+      ], components: postGameButtons("game_roulette") });
     }
   }
 
-  // فحص المهارة التفاعلي (1.5 ثانية)
+  // 🚪 [لعبة جديدة] هروب الأبواب
+  if (id === "game_gate") {
+    const correctGate = Math.random() > 0.5 ? "A" : "B";
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`gate_A_${correctGate}_${interaction.user.id}`).setLabel("🚪 بوابة A").setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`gate_B_${correctGate}_${interaction.user.id}`).setLabel("🚪 بوابة B").setStyle(ButtonStyle.Secondary)
+    );
+    return interaction.reply({ embeds: [
+      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🚪 لعبة بوابات الخروج التكتيكية").setDescription("قدامك بوابتين خروج، وحدة منهم مفتوحة وبتفلتك، والثانية وراها الكيلر ينتظرك! اختر وحدة منهم الحين:")
+    ], components: [row], ephemeral: true });
+  }
+
+  // معالجة لعبة الأبواب
+  if (id.startsWith("gate_")) {
+    const [, chosen, target, userId] = id.split("_");
+    if (interaction.user.id !== userId) return interaction.reply({ content: "❌ هذا الخيار ليس لك!", ephemeral: true });
+
+    if (chosen === target) {
+      p.pts += 40;
+      return interaction.update({ embeds: [
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("🚪 فلتت وفتحت البوابة الصح!").setDescription(`🏃 البوابة انفتحت وهربت بسلام من الماب!\n💰 **كسبت:** \`+40\` نقطة رصيد.`)
+      ], components: postGameButtons("game_gate") });
+    } else {
+      p.pts = Math.max(0, p.pts - 25);
+      return interaction.update({ embeds: [
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 البوابة مسدودة ومحميّة!").setDescription(`🪓 فتحت البوابة ولقيت ذا ماسترمايند بوجهك مسكك وطيّحك!\n📉 **خسرت:** \`-25\` نقطة رصيد.`)
+      ], components: postGameButtons("game_gate") });
+    }
+  }
+
+  // فحص المهارة (تم إخفاء التوقيت من اسم الزر الرئيسي)
   if (id === "game_skillcheck") {
     const checkTypes = [
       { type: "gen", title: "🛠️ !! SKILL CHECK — تصليح مولد", desc: "ظهر مؤشر تصليح المولد فجأة! اضغط على الهدف `🎯`!", winPts: 35, losePts: 20 },
@@ -338,8 +357,7 @@ client.on("interactionCreate", async interaction => {
 
     await interaction.reply({ 
       embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle(chosenGame.title)
-          .setDescription(`⚡ **معك ثانية ونص بس (1500ms)!!**\n\n> ${chosenGame.desc}`)
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle(chosenGame.title).setDescription(`⚡ **انتبه!**\n\n> ${chosenGame.desc}`)
       ], 
       components: [row], 
       ephemeral: true,
@@ -353,27 +371,20 @@ client.on("interactionCreate", async interaction => {
           p.pts = Math.max(0, p.pts - chosenGame.losePts);
           await interaction.editReply({
             embeds: [
-              new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 انفجار! انتهى الوقت")
-                .setDescription(`⏱️ مرت الثانية والنصف وما ضغطت شيء بالوقت، فشل الفحص ونقصت نقاطك \`-${chosenGame.losePts}\`.`)
+              new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 انفجار! انتهى الوقت").setDescription(`⏱️ مرت الثانية والنصف وما ضغطت شيء بالوقت، فشل الفحص ونقصت نقاطك \`-${chosenGame.losePts}\`.`)
             ],
-            components: []
+            components: postGameButtons("game_skillcheck")
           });
         }
-      } catch (err) {
-        // تم الضغط بنجاح
-      }
+      } catch (err) {}
     }, 1500);
-
     return;
   }
 
-  // معالجة أزرار فحص المهارة
+  // معالجة أزرار فحص المهارة (مع أزرار اللعب مجدداً)
   if (id.startsWith("sk_")) {
     const [, clicked, target, userId, gameType, status] = id.split("_");
-    
-    if (interaction.user.id !== userId) {
-      return interaction.reply({ content: "❌ هذا الفحص ليس لك!", ephemeral: true });
-    }
+    if (interaction.user.id !== userId) return interaction.reply({ content: "❌ هذا الفحص ليس لك!", ephemeral: true });
     if (status !== "active") return; 
 
     let winPts = 35, losePts = 20, successMsg = "", failMsg = "";
@@ -394,15 +405,13 @@ client.on("interactionCreate", async interaction => {
     if (clicked === target) {
       p.pts += winPts;
       return interaction.update({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 نجاح أسطوري وسريع!")
-          .setDescription(`${successMsg}\n\n💰 **الجوائز:** \`+${winPts}\` نقطة رصيد.`)
-      ], components: [] });
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 نجاح أسطوري وسريع!").setDescription(`${successMsg}\n\n💰 **الجوائز:** \`+${winPts}\` نقطة رصيد.`)
+      ], components: postGameButtons("game_skillcheck") });
     } else {
       p.pts = Math.max(0, p.pts - losePts);
       return interaction.update({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 فشل ذريع!")
-          .setDescription(`${failMsg}\n\n📉 **العقوبة:** \`-${losePts}\` من رصيدك.`)
-      ], components: [] });
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 فشل ذريع!").setDescription(`${failMsg}\n\n📉 **العقوبة:** \`-${losePts}\` من رصيدك.`)
+      ], components: postGameButtons("game_skillcheck") });
     }
   }
 
@@ -414,14 +423,13 @@ client.on("interactionCreate", async interaction => {
       : "📭 القائمة فارغة حالياً.";
 
     return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏆 لوحة أساطير الضباب")
-        .setDescription(lbDescription)
+      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏆 لوحة أساطير الضباب").setDescription(lbDescription)
     ], components: returnButton() });
   }
 });
 
 client.once("ready", () => {
-  console.log(`🚀 SOUL DBD CLEAN EDITION IS LIVE: ${client.user.tag}`);
+  console.log(`🚀 SOUL DBD ADVANCED EDITION IS LIVE: ${client.user.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
