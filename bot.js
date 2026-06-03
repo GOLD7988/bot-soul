@@ -14,7 +14,7 @@ const client = new Client({
 
 // ─── CONSTANTS & FLOATING VISUALS ───────────────────────────────────────────
 const LOGO = "https://cdn.discordapp.com/attachments/1510327104041127959/1510647569435332658/IMG_0059.jpg";
-const DISCORD_BG = 0x2B2D31; 
+const DISCORD_BG = 0x2B2D31; // سر اللون السحري لدمج وإخفاء حواف القائمة
 
 // ─── ADVANCED QUESTION BANK ──────────────────────────────────────────────────
 const dbdQuestions = [
@@ -35,39 +35,7 @@ const dbdQuestions = [
     q: "كم حبة توكن لازم تجمعها في بيرك (Devour Hope) عشان تقدر تقتل السرفايفر بيدك بدون خطاف؟",
     answers: ["5", "خمسة", "خمس", "five", "٥", "خمس توكنات", "5 توكنز"],
     hint: "نفس عدد المولدات اللي لازم تتصلح بالجيم"
-  },
-  {
-    id: 4,
-    q: "وش اسم الشنطة أو الصندوق اللي تستخدمه عشان تخرب الفخاخ أو تشيل الهوكات؟",
-    answers: ["صندوق العدة", "صندوق عده", "تول بوكس", "toolbox", "التول بوكس", "شنطة العدة", "عده", "العدة"],
-    hint: "Toolbox"
-  },
-  {
-    id: 5,
-    q: "إذا متوا كلكم وبقيت أنت لحالك بالجيم، وش الشيء اللي ينفتح لك في الأرض عشان تفلت؟",
-    answers: ["الهاتش", "هاتش", "البوابة الارضية", "hatch", "الفتحة", "الفتحه", "شق الارض", "الفتحه الارضيه"],
-    hint: "تطلع صوت صفير قوي"
-  },
-  {
-    id: 6,
-    q: "وش هي القوة الأساسية حقت الكيلر ذا ترابر (The Trapper)؟",
-    answers: ["فخاخ الدببة", "فخاخ الدببه", "فخاخ", "فخ", "bear traps", "bear trap", "الفخ", "تراب", "trap", "التراب"],
-    hint: "شيء يمسك رجلك وما يخليك تتحرك"
-  },
-  {
-    id: 7,
-    q: "وش اسم بيرك كلوديت اللي يخليك تيل نفسك (تشفي نفسك) لحالك بدون مدكت؟",
-    answers: ["سيلف كير", "سيلفكير", "self care", "selfcare", "سلف كير", "سلفكير", "بيرك سلف كير"],
-    hint: "Self Care"
   }
-];
-
-const typingRaces = [
-  "فزع لأخوك قبل ما يموت على الهوك",
-  "صلح المولدات بسرعة وافتح البوابة",
-  "الكيلر وراك لا تدرعم عشوائي",
-  "شغل ديد هارد وافلت من الضربة",
-  "انفجر المولد وجاك الكيلر يركض"
 ];
 
 // ─── RPG & MATCHMAKING SYSTEMS ───────────────────────────────────────────────
@@ -75,17 +43,13 @@ const db = new Collection();
 const lobbyQueue = new Set(); 
 let activeMatch = null;       
 let lastQuestionId = null; 
+let matchTimeout = null; // لتخزين وقت انتهاء العداد التنازلي
 
 function getPlayer(id, username) {
   if (!db.has(id)) {
     db.set(id, { id, name: username, pts: 100, rank: "ناجي مبتدئ 🏃" });
   }
-  const player = db.get(id);
-  if (player.pts >= 1500) player.rank = "مختار الكيان 👁️🔥";
-  else if (player.pts >= 800) player.rank = "سيد الضباب 🌫️🏆";
-  else if (player.pts >= 400) player.rank = "هارب محترف 🏃⚡";
-  db.set(id, player);
-  return player;
+  return db.get(id);
 }
 
 function cleanString(str) {
@@ -104,44 +68,29 @@ function matchAnswer(userInput, validAnswers) {
   return validAnswers.some(ans => cleanString(ans) === userClean || userClean.includes(cleanString(ans)));
 }
 
-// ─── UI EMBED BUILDERS ───────────────────────────────────────────────────────
-function buildLobbyEmbed(player) {
+// ─── UI EMBED BUILDERS (شفافة بالكامل تعرض الصورة فقط) ───────────────────────
+function buildLobbyEmbed() {
   return new EmbedBuilder()
     .setColor(DISCORD_BG)
-    .setTitle("🌌  SOUL DBD SYSTEM")
-    .setDescription(
-      `**اللاعب:** ${player.name}  •  **الرتبة:** \`${player.rank}\`  •  **الرصيد:** \`${player.pts} نقطة\`\n` +
-      `**طابور المواجهة الجماعية:** \`[${lobbyQueue.size}/4]\` لاعبين في الانتظار.`
-    )
-    .setImage(LOGO);
+    .setImage(LOGO); 
 }
 
 function lobbyComponents() {
   const row1 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("game_trivia").setLabel("🧠 تحدي فردي").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_typing").setLabel("⌨️ سباق كتابة").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_skillcheck").setLabel("🎯 فحص المهارة").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_roulette").setLabel("🎲 روليت الكيان").setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId("queue_join").setLabel("➕ دخول").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("queue_leave").setLabel("➖ خروج").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("game_trivia").setLabel("🏪 المتجر").setStyle(ButtonStyle.Secondary)
   );
   const row2 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("game_gate").setLabel("🚪 هروب الأبواب").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("queue_join").setLabel("📥 دخول طابور المواجهة [4 لاعبين]").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("game_leaderboard").setLabel("🏆 الأساطير").setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId("game_skillcheck").setLabel("💼 الحقيبة").setStyle(ButtonStyle.Secondary)
   );
   return [row1, row2];
 }
 
-function returnButton() {
-  return [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("go_lobby").setLabel("🏠 العودة للمخيم").setStyle(ButtonStyle.Secondary)
-  )];
-}
-
-// أزرار ما بعد النتيجة لفحص المهارة والألعاب الأخرى
 function postGameButtons(retryCustomId) {
   return [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(retryCustomId).setLabel("🔄 العب مرة ثانية").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("go_lobby").setLabel("🏠 القائمة الرئيسية").setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId(retryCustomId).setLabel("🔄 العب مرة ثانية").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("go_lobby").setLabel("🏠 العودة").setStyle(ButtonStyle.Secondary)
   )];
 }
 
@@ -153,16 +102,21 @@ client.on("messageCreate", async msg => {
 
   const contentClean = msg.content.trim().toLowerCase();
 
-  if (["لعب-", "!لعب", "لعب", "play", "!menu"].includes(contentClean)) {
-    const p = getPlayer(msg.author.id, msg.author.username);
-    return msg.reply({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
+  if (["لعب-", "!لعب", "لعب", "play", "روليت"].includes(contentClean)) {
+    return msg.reply({ 
+      content: `**اللاعبين:** \`[${lobbyQueue.size}/4]\`\n> اكتب \`لعب-\` لتحديث لوحتك الزجاجية.`,
+      embeds: [buildLobbyEmbed()], 
+      components: lobbyComponents() 
+    });
   }
 
+  // فحص إجابة المواجهة الجماعية للـ 4 لاعبين
   if (activeMatch && matchAnswer(msg.content, activeMatch.answers)) {
     const winner = getPlayer(msg.author.id, msg.author.username);
     winner.pts += 100; 
     activeMatch = null;
     lobbyQueue.clear(); 
+    if (matchTimeout) clearTimeout(matchTimeout); // إلغاء العداد التنازلي عند الحل
 
     return msg.reply({ embeds: [
       new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏆 انتصار في المواجهة الجماعية!")
@@ -170,6 +124,7 @@ client.on("messageCreate", async msg => {
     ]});
   }
 
+  // فحص تحدي المتجر الفردي
   const game = activeGames.get(msg.channel.id);
   if (!game) return;
 
@@ -179,17 +134,7 @@ client.on("messageCreate", async msg => {
     p.pts += 40;
     return msg.reply({ embeds: [
       new EmbedBuilder().setColor(DISCORD_BG).setTitle("🎉 إجابة صحيحة!")
-        .setDescription(`> **${msg.author.username}** جابها صح!\n💰 **الرصيد الجديد:** \`${p.pts}\``)
-    ]});
-  }
-
-  if (game.type === "typing" && msg.content.trim() === game.data) {
-    activeGames.delete(msg.channel.id);
-    const p = getPlayer(msg.author.id, msg.author.username);
-    p.pts += 45;
-    return msg.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("⌨️ كتبتها صح وأسرع واحد!")
-        .setDescription(`> **${msg.author.username}** فاز بسباق الكتابة المطور!\n💰 **كسب:** \`+45\` نقطة رصيد.`)
+        .setDescription(`> **${msg.author.username}** جابها صح!\n💰 **رصيدك الحالي:** \`${p.pts}\``)
     ]});
   }
 });
@@ -202,46 +147,76 @@ client.on("interactionCreate", async interaction => {
   const p = getPlayer(interaction.user.id, interaction.user.username);
 
   if (id === "go_lobby") {
-    return interaction.update({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
+    return interaction.update({ 
+      content: `**اللاعبين:** \`[${lobbyQueue.size}/4]\``,
+      embeds: [buildLobbyEmbed()], 
+      components: lobbyComponents() 
+    });
   }
 
-  // طابور الـ 4 لاعبين
+  // نظام الطابور التفاعلي بالعداد التنازلي التلقائي بالملي مثل صورتك!
   if (id === "queue_join") {
     if (lobbyQueue.has(interaction.user.id)) return interaction.reply({ content: "⚠️ أنت مسجل بالفعل في طابور الانتظار!", ephemeral: true });
     if (activeMatch) return interaction.reply({ content: "⚠️ هناك مواجهة جماعية قائمة حالياً، انتظر حتى تنتهي!", ephemeral: true });
 
     lobbyQueue.add(interaction.user.id);
-    const neededPlayers = 4 - lobbyQueue.size;
 
     if (lobbyQueue.size === 4) {
       let q = dbdQuestions[Math.floor(Math.random() * dbdQuestions.length)];
       activeMatch = q; 
 
       const playersMention = Array.from(lobbyQueue).map(id => `<@${id}>`).join(" ");
-      await interaction.update({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
+      
+      // حساب وقت انتهاء العداد التنازلي الرسمي (بعد 60 ثانية من الآن) وتحويله لكود ديسكورد التفاعلي
+      const endTimestamp = Math.floor((Date.now() + 60000) / 1000);
+      const discordCountdown = `<t:${endTimestamp}:R>`; // هذا الكود يخليه ينقص بالثواني تلقائياً!
 
-      setTimeout(() => {
+      // تحديث رسالة اللوبي لتظهر ممتلئة بالكامل
+      await interaction.update({ 
+        content: `**اللاعبين:** \`[4/4]\`\n🚨 **انتهى الانتظار وبدأت المواجهة فوراً!**`,
+        embeds: [buildLobbyEmbed()], 
+        components: lobbyComponents() 
+      });
+
+      // إطلاق المؤقت التلقائي لإلغاء الروم وتصفيره لو سحبوا على الحل
+      matchTimeout = setTimeout(() => {
         if (activeMatch === q) {
           activeMatch = null;
           lobbyQueue.clear();
-          interaction.channel.send("⏱️ **انتهت المواجهة الجماعية!** مرت دقيقة كاملة بدون أي إجابة صحيحة، وتم تصفير الطابور.");
+          interaction.channel.send("⏱️ **انتهى وقت المواجهة الجماعية!** ولم يعرف أحد الحل، تم تصفير الطابور.");
         }
       }, 60000);
 
       return interaction.channel.send({
-        content: `🚨 **اكتمل الطابور وبدأت المواجهة فوراً!**\nالمتحدون: ${playersMention}`,
+        content: `🚨 **انطلقت المواجهة الجماعية الحماسية!**\nالمتحدون: ${playersMention}\nينتهي التحدي: ${discordCountdown} ⏳`,
         embeds: [
-          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⚔️ مواجهة الـ 4 لاعبين الحماسيّة!")
-            .setDescription(`### الأسْرَع في الشات يفوز بـ 100 نقطة:\n\n**${q.q}**`)
+          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⚔️ تحدي الـ 4 لاعبين")
+            .setDescription(`### الأسْرَع بالشات يقتنص الـ 100 نقطة:\n\n**${q.q}**`)
         ]
       });
     }
 
-    await interaction.update({ embeds: [buildLobbyEmbed(p)], components: lobbyComponents() });
-    return interaction.followUp({ content: `✅ **تم تسجيلك!** باقي \`[ ${neededPlayers} ]\` لاعبين وتبدأ المواجهة.`, ephemeral: true });
+    // إذا لم يكتمل العدد، يحدّث النص العلوي مباشرة فوق الصورة بكل هدوء بدون رسائل جديدة
+    return interaction.update({ 
+      content: `**اللاعبين:** \`[${lobbyQueue.size}/4]\`\n⏳ تم تسجيل دخولك بنجاح! في انتظار اكتمال العدد...`,
+      embeds: [buildLobbyEmbed()], 
+      components: lobbyComponents() 
+    });
   }
 
-  // تحدي فردي
+  // زر خروج من الطابور
+  if (id === "queue_leave") {
+    if (!lobbyQueue.has(interaction.user.id)) return interaction.reply({ content: "⚠️ أنت مو مسجل في الطابور أصلاً!", ephemeral: true });
+    
+    lobbyQueue.delete(interaction.user.id);
+    return interaction.update({ 
+      content: `**اللاعبين:** \`[${lobbyQueue.size}/4]\`\n🚪 تم خروجك من الطابور.`,
+      embeds: [buildLobbyEmbed()], 
+      components: lobbyComponents() 
+    });
+  }
+
+  // زر 🏪 المتجر
   if (id === "game_trivia") {
     if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ هناك تحدي نشط في الروم حالياً!", ephemeral: true });
     let availableQuestions = dbdQuestions.filter(q => q.id !== lastQuestionId);
@@ -256,87 +231,17 @@ client.on("interactionCreate", async interaction => {
       if (checkGame && checkGame.type === "trivia" && checkGame.data.id === q.id) {
         activeGames.delete(interaction.channel.id);
         interaction.channel.send({ embeds: [
-          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت التحدي الفردي!").setDescription(`مرت 30 ثانية وما حد عرف الجواب الصحيح.\n> الإجابة: **${q.answers[0]}**`)
+          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت التحدي!").setDescription(`مرت 30 ثانية وما حد عرف الجواب.\n> الإجابة الصحيحة: **${q.answers[0]}**`)
         ]});
       }
     }, 30000);
 
     return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🧠 تحدي فكري فردي (سؤال عامي)").setDescription(`### ${q.q}`)
-    ], components: returnButton() });
+      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏪 تحدي المتجر الفكري").setDescription(`### ${q.q}`)
+    ], components: postGameButtons("game_trivia") });
   }
 
-  // سباق الكتابة
-  if (id === "game_typing") {
-    if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ هناك تحدي نشط في الروم حالياً!", ephemeral: true });
-    const txt = typingRaces[Math.floor(Math.random() * typingRaces.length)];
-    activeGames.set(interaction.channel.id, { type: "typing", data: txt });
-
-    setTimeout(() => {
-      const checkGame = activeGames.get(interaction.channel.id);
-      if (checkGame && checkGame.type === "typing" && checkGame.data === txt) {
-        activeGames.delete(interaction.channel.id);
-        interaction.channel.send({ embeds: [
-          new EmbedBuilder().setColor(DISCORD_BG).setTitle("⏱️ انتهى وقت سباق الكتابة!").setDescription("مرت 30 ثانية وما حد كتب الجملة.")
-        ]});
-      }
-    }, 30000);
-
-    return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("⌨️ سباق سرعة الكتابة!").setDescription(`اكتب الجملة هذي بسرعة في الشات:\n\n> **${txt}**`)
-    ], components: returnButton() });
-  }
-
-  // روليت الكيان
-  if (id === "game_roulette") {
-    if (p.pts < 30) return interaction.reply({ content: "❌ رصيدك منخفض جداً للمخاطرة (تحتاج 30 نقطة)!", ephemeral: true });
-    const win = Math.random() > 0.55; 
-    const bet = 30;
-
-    if (win) {
-      p.pts += bet * 2;
-      return interaction.reply({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("🎲 روليت الكيان: هروب!").setDescription(`🏃 نجحت في الهروب!\n📈 **الأرباح:** \`+${bet * 2}\`  •  **الرصيد:** \`${p.pts}\``)
-      ], components: postGameButtons("game_roulette") });
-    } else {
-      p.pts -= bet;
-      return interaction.reply({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 روليت الكيان: تضحية!").setDescription(`🪝 تم تعليقك على الخطاف.\n📉 **الخسارة:** \`-${bet}\`  •  **الرصيد:** \`${p.pts}\``)
-      ], components: postGameButtons("game_roulette") });
-    }
-  }
-
-  // 🚪 [لعبة جديدة] هروب الأبواب
-  if (id === "game_gate") {
-    const correctGate = Math.random() > 0.5 ? "A" : "B";
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`gate_A_${correctGate}_${interaction.user.id}`).setLabel("🚪 بوابة A").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`gate_B_${correctGate}_${interaction.user.id}`).setLabel("🚪 بوابة B").setStyle(ButtonStyle.Secondary)
-    );
-    return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🚪 لعبة بوابات الخروج التكتيكية").setDescription("قدامك بوابتين خروج، وحدة منهم مفتوحة وبتفلتك، والثانية وراها الكيلر ينتظرك! اختر وحدة منهم الحين:")
-    ], components: [row], ephemeral: true });
-  }
-
-  // معالجة لعبة الأبواب
-  if (id.startsWith("gate_")) {
-    const [, chosen, target, userId] = id.split("_");
-    if (interaction.user.id !== userId) return interaction.reply({ content: "❌ هذا الخيار ليس لك!", ephemeral: true });
-
-    if (chosen === target) {
-      p.pts += 40;
-      return interaction.update({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("🚪 فلتت وفتحت البوابة الصح!").setDescription(`🏃 البوابة انفتحت وهربت بسلام من الماب!\n💰 **كسبت:** \`+40\` نقطة رصيد.`)
-      ], components: postGameButtons("game_gate") });
-    } else {
-      p.pts = Math.max(0, p.pts - 25);
-      return interaction.update({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 البوابة مسدودة ومحميّة!").setDescription(`🪓 فتحت البوابة ولقيت ذا ماسترمايند بوجهك مسكك وطيّحك!\n📉 **خسرت:** \`-25\` نقطة رصيد.`)
-      ], components: postGameButtons("game_gate") });
-    }
-  }
-
-  // فحص المهارة (تم إخفاء التوقيت من اسم الزر الرئيسي)
+  // زر 💼 الحقيبة (فحص المهارة التفاعلي والمؤقت 1.5 ثانية)
   if (id === "game_skillcheck") {
     const checkTypes = [
       { type: "gen", title: "🛠️ !! SKILL CHECK — تصليح مولد", desc: "ظهر مؤشر تصليح المولد فجأة! اضغط على الهدف `🎯`!", winPts: 35, losePts: 20 },
@@ -357,7 +262,7 @@ client.on("interactionCreate", async interaction => {
 
     await interaction.reply({ 
       embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle(chosenGame.title).setDescription(`⚡ **انتبه!**\n\n> ${chosenGame.desc}`)
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle(chosenGame.title).setDescription(`⚡ **انتبه لفحص الحقيبة!**\n\n> ${chosenGame.desc}`)
       ], 
       components: [row], 
       ephemeral: true,
@@ -371,7 +276,7 @@ client.on("interactionCreate", async interaction => {
           p.pts = Math.max(0, p.pts - chosenGame.losePts);
           await interaction.editReply({
             embeds: [
-              new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 انفجار! انتهى الوقت").setDescription(`⏱️ مرت الثانية والنصف وما ضغطت شيء بالوقت، فشل الفحص ونقصت نقاطك \`-${chosenGame.losePts}\`.`)
+              new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 كراش وانفجار! انتهى الوقت").setDescription(`⏱️ تأخرت في ردة الفعل، فشل الفحص ونقصت نقاطك \`-${chosenGame.losePts}\`.`)
             ],
             components: postGameButtons("game_skillcheck")
           });
@@ -381,7 +286,7 @@ client.on("interactionCreate", async interaction => {
     return;
   }
 
-  // معالجة أزرار فحص المهارة (مع أزرار اللعب مجدداً)
+  // معالجة أزرار فحص المهارة
   if (id.startsWith("sk_")) {
     const [, clicked, target, userId, gameType, status] = id.split("_");
     if (interaction.user.id !== userId) return interaction.reply({ content: "❌ هذا الفحص ليس لك!", ephemeral: true });
@@ -394,12 +299,12 @@ client.on("interactionCreate", async interaction => {
       failMsg = "انفجر المولد بوجهك وجاك الكيلر يركض!";
     } else if (gameType === "heal") {
       winPts = 40; losePts = 25;
-      successMsg = "كفو! هيلت خويك بنجاح وأعطيته صحة إضافية.";
-      failMsg = "صرخ صاحبك بقوة وتراجع شريط الشفاء بسبب النزيف!";
+      successMsg = "كفو! هيلت خويك بنجاح.";
+      failMsg = "صرخ صاحبك بقوة وتراجع شريط الشفاء!";
     } else if (gameType === "trap") {
       winPts = 50; losePts = 35;
       successMsg = "أسطورة! فككت الفخ الفولاذي وهربت بذكاء.";
-      failMsg = "طبق الفخ على رجلك! مسكك ترابر وتأذيت بشدة.";
+      failMsg = "طبق الفخ على رجلك ومسكك ترابر!";
     }
 
     if (clicked === target) {
@@ -410,26 +315,14 @@ client.on("interactionCreate", async interaction => {
     } else {
       p.pts = Math.max(0, p.pts - losePts);
       return interaction.update({ embeds: [
-        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 فشل ذريع!").setDescription(`${failMsg}\n\n📉 **العقوبة:** \`-${losePts}\` من رصيدك.`)
+        new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 كراش وفشل!").setDescription(`${failMsg}\n\n📉 **العقوبة:** \`-${losePts}\` من رصيدك.`)
       ], components: postGameButtons("game_skillcheck") });
     }
-  }
-
-  // لوحة الصدارة
-  if (id === "game_leaderboard") {
-    const sorted = [...db.values()].sort((a, b) => b.pts - a.pts).slice(0, 5);
-    const lbDescription = sorted.length 
-      ? sorted.map((pl, idx) => `> **${idx + 1}. ${pl.name}** — \`${pl.pts} نقطة\` (${pl.rank})`).join("\n")
-      : "📭 القائمة فارغة حالياً.";
-
-    return interaction.reply({ embeds: [
-      new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏆 لوحة أساطير الضباب").setDescription(lbDescription)
-    ], components: returnButton() });
   }
 });
 
 client.once("ready", () => {
-  console.log(`🚀 SOUL DBD ADVANCED EDITION IS LIVE: ${client.user.tag}`);
+  console.log(`🚀 SOUL DBD DYNAMIC EDITION IS LIVE: ${client.user.tag}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
