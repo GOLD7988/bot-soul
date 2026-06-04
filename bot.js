@@ -1,297 +1,431 @@
 const {
-  Client, GatewayIntentBits, EmbedBuilder,
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, Collection
-} = require("discord.js");
+Client, GatewayIntentBits, EmbedBuilder,
+ActionRowBuilder, ButtonBuilder, ButtonStyle, Collection
+} = require(“discord.js”);
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
-  ]
+intents: [
+GatewayIntentBits.Guilds,
+GatewayIntentBits.GuildMessages,
+GatewayIntentBits.MessageContent,
+GatewayIntentBits.GuildMembers
+]
 });
 
-// ─── CONSTANTS & FLOATING VISUALS ───────────────────────────────────────────
-const LOGO = "https://cdn.discordapp.com/attachments/1510327104041127959/1510647569435332658/IMG_0059.jpg";
-const DISCORD_BG = 0x2B2D31; // لون ديسكورد الشفاف الفخم لتختفي حدود القائمة
+const LOGO = “https://cdn.discordapp.com/attachments/1510327104041127959/1510647569435332658/IMG_0059.jpg”;
+const DISCORD_BG = 0x2B2D31;
 
-// ─── ADVANCED QUESTION BANK ──────────────────────────────────────────────────
+// ─── QUESTION BANK ───────────────────────────────────────────────────────────
 const dbdQuestions = [
-  { id: 1, q: "وش البيرك اللي يعطيك دزّة قدام وحماية من الضربة وأنت مصاب؟ (حق ديفيد كينج)", answers: ["ديد هارد", "ديدهارد", "dead hard", "deadhard", "بيرك ديدهارد", "المنيع", "dh", "دد هارد", "ددهارد"], hint: "يختصرونه بـ DH" },
-  { id: 2, q: "وش اسم الكيان أو الشيء الأسود الخفي اللي يبي التضحيات ويتحكم بالضباب؟", answers: ["ذا انتيتي", "انتيتي", "the entity", "entity", "الكيان", "الانتيي", "انتتي", "الأنتيتي"], hint: "The Entity" },
-  { id: 3, q: "كم حبة توكن لازم تجمعها في بيرك (Devour Hope) عشان تقدر تقتل السرفايفر بيدك بدون خطاف؟", answers: ["5", "خمسة", "خمس", "five", "٥"], hint: "نفس عدد المولدات الكلية" },
-  { id: 4, q: "وش اسم الشنطة أو الصندوق اللي تستخدمه عشان تخرب الفخاخ أو تشيل الهوكات؟", answers: ["صندوق العدة", "صندوق عده", "تول بوكس", "toolbox", "التول بوكس", "شنطة العدة"], hint: "Toolbox" },
-  { id: 5, q: "إذا متوا كلكم وبقيت أنت لحالك بالجيم، وش الشيء اللي ينفتح لك في الأرض عشان تفلت؟", answers: ["الهاتش", "هاتش", "البوابة الارضية", "hatch", "الفتحة", "الفتحه"], hint: "تطلع صوت صفير قوي" }
+{ q: “وش البيرك اللي يعطيك دزة قدام وحماية من الضربة وانت مصاب؟”, answers: [“ديد هارد”, “dead hard”, “dh”, “ددهارد”, “ديدهارد”] },
+{ q: “وش اسم الكيان الأسود الخفي اللي يتحكم بالضباب ويبي التضحيات؟”, answers: [“ذا انتيتي”, “انتيتي”, “the entity”, “entity”, “الكيان”] },
+{ q: “كم توكن في بيرك Devour Hope عشان تقتل بيدك؟”, answers: [“5”, “خمسة”, “خمس”] },
+{ q: “وش اسم الصندوق اللي تستخدمه عشان تخرب الفخاخ وتصلح المولدات بسرعة؟”, answers: [“صندوق العدة”, “تول بوكس”, “toolbox”] },
+{ q: “اذا متوا كلكم وبقيت لحالك، وش الشيء اللي ينفتح في الارض عشان تفلت؟”, answers: [“هاتش”, “الهاتش”, “hatch”, “الفتحة”] },
+{ q: “كم مولد تصلح عشان تفتح البوابة؟”, answers: [“5”, “خمسة”, “خمس”] },
+{ q: “ما هو البيرك اللي يخليك تقوم من الارض لوحدك؟”, answers: [“انبريكبل”, “unbreakable”] },
+{ q: “ما هو البيرك اللي يخليك تشوف السرفايفرز بعد الخطاف؟”, answers: [“باربيكيو”, “barbecue”, “barbeque”, “باربيكيو آند شيلي”] },
+{ q: “ما هو البيرك اللي يوقف 3 مولدات في بداية المباراة؟”, answers: [“كوراپت انترفينشن”, “corrupt intervention”] },
+{ q: “ما هو البيرك اللي يرجع المولدات للخلف لوحدها؟”, answers: [“هيكس رين”, “ruin”, “hex ruin”] },
+{ q: “ما اسم الكيلر اللي يبلنك من خلال الجدران؟”, answers: [“نيرس”, “nurse”, “ذا نيرس”] },
+{ q: “ما اسم الكيلر اللي يرمي فؤوس؟”, answers: [“هنتريس”, “huntress”, “ذا هنتريس”] },
+{ q: “ما اسم الكيلر من Halloween؟”, answers: [“شيب”, “مايرز”, “shape”, “myers”, “ذا شيب”] },
+{ q: “ما اسم الكيلر من Resident Evil 3؟”, answers: [“نيميسيس”, “nemesis”, “ذا نيميسيس”] },
+{ q: “ما اسم الكيلر من Alien؟”, answers: [“زينومورف”, “xenomorph”, “ذا زينومورف”] },
+{ q: “ما اسم الكيلر من Child’s Play؟”, answers: [“چاكي”, “chucky”, “ذا چاكي”] },
+{ q: “ما اسم الكيلر الياباني اللي يمشي بسرعة خفية؟”, answers: [“سبيريت”, “spirit”, “ذا سبيريت”] },
+{ q: “ما اسم الكيلر من Saw؟”, answers: [“پيگ”, “pig”, “ذا پيگ”] },
+{ q: “ما اسم الكيلر من Scream؟”, answers: [“غوست فيس”, “ghost face”, “ghostface”] },
+{ q: “ما اسم الكيلر من Hellraiser؟”, answers: [“سينوبايت”, “cenobite”, “pinhead”, “پينهيد”] },
+{ q: “ما هو البيرك اللي يخليك تتهرب من ضربة بالركض؟”, answers: [“ديد هارد”, “dead hard”, “dh”] },
+{ q: “كم سرفايفر في المباراة الواحدة؟”, answers: [“4”, “اربعة”, “اربع”] },
+{ q: “ما اسم العملة في DBD؟”, answers: [“بلودپوينتس”, “bloodpoints”, “blood points”] },
+{ q: “ما هو البيرك اللي يخليك تشفي نفسك بدون صندوق؟”, answers: [“سيلف كير”, “self care”] },
+{ q: “ما هو البيرك اللي يعطيك سرعة مفاجئة اول ما تركض؟”, answers: [“سبرنت برست”, “sprint burst”] },
+{ q: “ما هي قوة ذا بلايت؟”, answers: [“راش”, “rush”, “بلايتد كوراپشن”, “blighted corruption”] },
+{ q: “ما هي قوة ذا ليجن؟”, answers: [“فيرال فرنزي”, “feral frenzy”] },
+{ q: “ما هو البيرك اللي يبطئ المولدات لما سرفايفر يتجرح؟”, answers: [“ثاناتوفوبيا”, “thanatophobia”] },
+{ q: “ما اسم الكيلر من Texas Chainsaw؟”, answers: [“كانيبال”, “cannibal”, “بوبا”, “bubba”] },
+{ q: “ما اسم الكيلر اللي يستخدم غاز؟”, answers: [“كلاون”, “clown”, “ذا كلاون”] },
+{ q: “ما هو البيرك اللي يخليك تحس بالكيلر وهو يشوفك؟”, answers: [“سپاين شيل”, “spine chill”] },
+{ q: “ما هو البيرك اللي يخليك ما تصدر صوت وانت مجروح؟”, answers: [“ايرون ويل”, “iron will”] },
+{ q: “ما اسم الكيلر اللي يرمي سكاكين صغيرة كثيرة؟”, answers: [“ترايكستر”, “trickster”] },
+{ q: “ما اسم الكيلر من RE8 ويسكر؟”, answers: [“ماسترمايند”, “mastermind”, “ويسكر”, “wesker”] },
+{ q: “ما اسم الكيلر من The Ring؟”, answers: [“اونريو”, “onryo”, “ساداكو”, “sadako”] },
+{ q: “كم مرة تتحمل على الخطاف قبل الموت؟”, answers: [“2”, “مرتين”, “اثنين”] },
+{ q: “ما هو البيرك اللي يخليك تطعن الكيلر بعد الانقاذ؟”, answers: [“ديسيسيف ستريك”, “decisive strike”, “ds”] },
+{ q: “ما اسم الكيلر اللي له قوة رسم الفخاخ على الارض؟”, answers: [“هاگ”, “hag”, “ذا هاگ”] },
+{ q: “ما هو البيرك اللي يعطي الشخص اللي انقذته حماية؟”, answers: [“بوروود تايم”, “borrowed time”, “bt”] },
+{ q: “ما اسم الكيلر اللي يرمي بندقية بحبل؟”, answers: [“ديثسلينجر”, “deathslinger”] },
+{ q: “وش المقصود بـ DS في عالم DBD؟”, answers: [“ديسيسيف ستريك”, “decisive strike”] },
+{ q: “ما اسم الكيلر اللي له ذراع طويلة كعقاب؟”, answers: [“اكزيكيوشنر”, “executioner”, “بيراميد هيد”, “pyramid head”] },
+{ q: “ما اسم الكيلر اللي يستخدم فيروس T-Virus؟”, answers: [“نيميسيس”, “nemesis”] },
+{ q: “ما هو الشيء الذي اذا كسره السرفايفر ينقذ فريقه من الهيكس؟”, answers: [“التوتيم”, “totem”, “الحجر”] },
+{ q: “ما اسم الكيلر الكوري اللي يرمي سكاكين؟”, answers: [“ترايكستر”, “trickster”, “كوري”, “ji-woon”] },
+{ q: “ما هي قوة ذا ترابر؟”, answers: [“فخاخ الدببة”, “bear traps”, “بير ترابس”] },
+{ q: “ما هو البيرك اللي يعطيك سرعة وهيل عند اخر مولد؟”, answers: [“ادرينالين”, “adrenaline”] },
+{ q: “ما هو الشيء اللي ترميه عشان توقف الكيلر؟”, answers: [“بالت”, “pallet”] },
+{ q: “ما اسم الكيلر من Stranger Things؟”, answers: [“ديموقورقون”, “demogorgon”] },
+{ q: “ما هو البيرك اللي يخليك تشوف الكيلر وهو يشوفك؟”, answers: [“اوبجكت اوف ابسيشن”, “object of obsession”, “ooo”] },
 ];
 
-// ألعاب كمل الكلمة
+// ─── كلمات مفككة ─────────────────────────────────────────────────────────────
+const scrambledWords = [
+{ scrambled: “ر ا ر ب ت”, answer: “ترابر”, hint: “كيلر الفخاخ” },
+{ scrambled: “س ر ي ن”, answer: “نيرس”, hint: “كيلر البلنك” },
+{ scrambled: “ي ت ن س ه ر”, answer: “هنتريس”, hint: “كيلر الفؤوس” },
+{ scrambled: “ت ي ل ب ا”, answer: “بلايت”, hint: “كيلر خبير سريع” },
+{ scrambled: “ت ي ر ب ي س”, answer: “سبيريت”, hint: “كيلر ياباني” },
+{ scrambled: “و د ن”, answer: “نود”, hint: “بيرك كيلر خطير” },
+{ scrambled: “ن ي ل ا ن ي ر د ا”, answer: “ادرينالين”, hint: “بيرك سرفايفر عند اخر مولد” },
+{ scrambled: “ي ك ا چ”, answer: “چاكي”, hint: “دمية كيلر” },
+{ scrambled: “س ن ر ي ن ه”, answer: “هنتريس”, hint: “ترمي فؤوس” },
+{ scrambled: “ر ه ب ر ت ا ب”, answer: “باربيكيو”, hint: “بيرك ترى فيه الجميع” },
+{ scrambled: “ل ب ك ر ب ن ا”, answer: “انبريكبل”, hint: “بيرك القيام لوحدك” },
+{ scrambled: “ج ه ا”, answer: “هاگ”, hint: “كيلر الفخاخ الارضية” },
+];
+
+// ─── حرف ناقص ────────────────────────────────────────────────────────────────
+const missingLetterWords = [
+{ blanked: “_رابر”, answer: “ترابر”, hint: “كيلر الفخاخ” },
+{ blanked: “ني_س”, answer: “نيرس”, hint: “كيلر البلنك” },
+{ blanked: “هنت_يس”, answer: “هنتريس”, hint: “كيلر الفؤوس” },
+{ blanked: “سبي_يت”, answer: “سبيريت”, hint: “كيلر ياباني خبير” },
+{ blanked: “نيم_سيس”, answer: “نيميسيس”, hint: “كيلر من RE” },
+{ blanked: “ديد ه_رد”, answer: “ديد هارد”, hint: “بيرك تهرب من ضربة” },
+{ blanked: “انبريك_ل”, answer: “انبريكبل”, hint: “بيرك تقوم لوحدك” },
+{ blanked: “بارب_كيو”, answer: “باربيكيو”, hint: “بيرك ترى السرفايفرز” },
+{ blanked: “چا_ي”, answer: “چاكي”, hint: “دمية قاتلة” },
+{ blanked: “ب_ايت”, answer: “بلايت”, hint: “كيلر سريع خبير” },
+{ blanked: “ه_كس رين”, answer: “هيكس رين”, hint: “بيرك يوقف المولدات” },
+{ blanked: “ث_ناتوفوبيا”, answer: “ثاناتوفوبيا”, hint: “بيرك يبطئ المولدات بالجرح” },
+];
+
+// ─── كمل الكلمة ───────────────────────────────────────────────────────────────
 const completeWordGames = [
-  { display: "سيلف ____", answers: ["سيلف كير", "سيلفكير", "self care", "selfcare", "سلف كير"], hint: "بيرك الهيل الشهير لحالك" },
-  { display: "ديسيسيف ____", answers: ["ديسيسيف ستريك", "decisive strike", "سترايك", "ستريك"], hint: "بيرك الطعنة حقت لوري ستالي" },
-  { display: "ويندوز اوف ____", answers: ["ويندوز اوف اوبورتيونتي", "windows of opportunity", "اوبورتيونتي", "اوبورتونتي"], hint: "بيرك كاشف الشبابيك والبالتات" },
-  { display: "سبرنت ____", answers: ["سبرنت برست", "sprint burst", "برست", "بيرست"], hint: "بيرك السرعة المفاجئة أول ما تركض" }
+{ display: “سيلف ____”, answers: [“سيلف كير”, “self care”], hint: “بيرك الهيل لوحدك” },
+{ display: “ديسيسيف ____”, answers: [“ديسيسيف ستريك”, “decisive strike”], hint: “بيرك طعنة الكيلر بعد الانقاذ” },
+{ display: “سبرنت ____”, answers: [“سبرنت برست”, “sprint burst”], hint: “بيرك السرعة المفاجئة” },
+{ display: “ايرون ____”, answers: [“ايرون ويل”, “iron will”], hint: “بيرك الصمت وانت مجروح” },
+{ display: “بوروود ____”, answers: [“بوروود تايم”, “borrowed time”], hint: “بيرك حماية المنقذ” },
+{ display: “هيكس ____”, answers: [“هيكس رين”, “hex ruin”], hint: “بيرك يرجع المولدات للخلف” },
+{ display: “كوراپت ____”, answers: [“كوراپت انترفينشن”, “corrupt intervention”], hint: “بيرك يوقف 3 مولدات” },
+{ display: “باربيكيو ____”, answers: [“باربيكيو آند شيلي”, “barbecue and chili”], hint: “بيرك ترى الكل بعد الخطاف” },
 ];
 
-// ألعاب تتبع الأثر (اتجاه اللوب)
-const scratchMarksGames = [
-  { text: "🔴🔴🔴\n🔴 🏃 🔴\n      \n الخدوش حمراء ومرتبة ورا الجدار، وين راح السرفايفر؟", answers: ["نط من الشباك", "نط شباك", "الشباك", "vaulted", "window"], hint: "فكر بتكتيكات اللوب السريع" },
-  { text: "🩸  🩸  🩸\n🩸 🔪 🚶\n بقع الدم على الأرض حارة والكيلر يمشي ببطء وصوت الأنفاس اختفى فجأة، وش سوا السرفايفر؟", answers: ["دخل الصندوق", "دخل صندوق", "صندوق", "locker", "خزانة"], hint: "مكان يختبئ فيه يقطع الأثر تماماً" }
-];
-
-const typingRaces = [
-  "فزع لأخوك قبل ما يموت على الهوك",
-  "صلح المولدات بسرعة وافتح البوابة",
-  "شغل ديد هارد وافلت من الضربة"
-];
-
-// ─── RPG & MATCHMAKING SYSTEMS ───────────────────────────────────────────────
-const db = new Collection(); 
-const lobbyQueue = new Set(); 
-let activeMatch = null;       
-let lastQuestionId = null; 
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+const db = new Collection();
+const lobbyQueue = new Set();
+let activeMatch = null;
 let matchTimeout = null;
+const activeGames = new Collection();
 
 function getPlayer(id, username) {
-  if (!db.has(id)) {
-    db.set(id, { id, name: username, pts: 100, rank: "ناجي مبتدئ 🏃" });
-  }
-  return db.get(id);
+if (!db.has(id)) db.set(id, { id, name: username, pts: 100 });
+const p = db.get(id);
+p.name = username;
+return p;
 }
 
-function cleanString(str) {
-  if (!str) return "";
-  return str.toLowerCase().trim().replace(/[\s_.-]/g, "").replace(/[أإآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/^ال/, "");    
+function cleanStr(str) {
+if (!str) return “”;
+return str.toLowerCase().trim()
+.replace(/\s+/g, “”)
+.replace(/[أإآا]/g, “ا”)
+.replace(/ة/g, “ه”)
+.replace(/ى/g, “ي”);
 }
 
-function matchAnswer(userInput, validAnswers) {
-  const userClean = cleanString(userInput);
-  return validAnswers.some(ans => cleanString(ans) === userClean || userClean.includes(cleanString(ans)));
+function matchAns(input, validAnswers) {
+const clean = cleanStr(input);
+return validAnswers.some(a => cleanStr(a) === clean || clean.includes(cleanStr(a)));
 }
 
-// ─── UI EMBED BUILDERS ───────────────────────────────────────────────────────
-function buildLobbyEmbed() {
-  return new EmbedBuilder().setColor(DISCORD_BG).setImage(LOGO); 
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ─── UI BUILDERS ─────────────────────────────────────────────────────────────
+function logoEmbed() {
+return new EmbedBuilder().setColor(DISCORD_BG).setImage(LOGO);
 }
 
-// واجهة البداية بـ زر واحد فقط نظيف وفخم
-function startComponent() {
-  return [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("open_games_menu").setLabel("🎮 قائمة الألعاب").setStyle(ButtonStyle.Secondary)
-  )];
+function startRow() {
+return [new ActionRowBuilder().addComponents(
+new ButtonBuilder().setCustomId(“open_menu”).setLabel(“🎮 قائمة الالعاب”).setStyle(ButtonStyle.Secondary)
+)];
 }
 
-// لوحة الألعاب الكاملة بعد الضغط على الزر الأساسي
-function lobbyComponents() {
-  const row1 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("game_trivia").setLabel("🧠 تحدي فردي").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_complete").setLabel("📝 كمل الكلمة").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_skillcheck").setLabel("🎯 فحص المهارة").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_roulette").setLabel("🎲 روليت الكيان").setStyle(ButtonStyle.Secondary)
-  );
-  const row2 = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId("game_luckybox").setLabel("📦 المربع الصح").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("game_mafia").setLabel("🕵️ مافيا الشات").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("queue_join").setLabel("📥 دخول طابور [4]").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId("game_leaderboard").setLabel("🏆 الأساطير").setStyle(ButtonStyle.Secondary)
-  );
-  return [row1, row2];
+function menuRows() {
+return [
+new ActionRowBuilder().addComponents(
+new ButtonBuilder().setCustomId(“g_trivia”).setLabel(“🧠 تحدي فردي”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_scramble”).setLabel(“🔤 كلمة مفككة”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_missing”).setLabel(“❓ حرف ناقص”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_complete”).setLabel(“📝 كمل الكلمة”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_roulette”).setLabel(“🎲 روليت الكيان”).setStyle(ButtonStyle.Secondary)
+),
+new ActionRowBuilder().addComponents(
+new ButtonBuilder().setCustomId(“g_skillcheck”).setLabel(“🎯 فحص المهارة”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_luckybox”).setLabel(“📦 صندوق الحظ”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_mafia”).setLabel(“🕵️ مافيا الشات”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“g_queue”).setLabel(“⚔️ تحدي جماعي [4]”).setStyle(ButtonStyle.Primary),
+new ButtonBuilder().setCustomId(“g_lb”).setLabel(“🏆 الاساطير”).setStyle(ButtonStyle.Secondary)
+)
+];
 }
 
-function postGameButtons(retryCustomId) {
-  return [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(retryCustomId).setLabel("🔄 العب مرة ثانية").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId("go_lobby").setLabel("🏠 العودة").setStyle(ButtonStyle.Secondary)
-  )];
+function retryRow(btnId) {
+return [new ActionRowBuilder().addComponents(
+new ButtonBuilder().setCustomId(btnId).setLabel(“🔄 مرة ثانية”).setStyle(ButtonStyle.Secondary),
+new ButtonBuilder().setCustomId(“open_menu”).setLabel(“🏠 القائمة”).setStyle(ButtonStyle.Secondary)
+)];
 }
 
 // ─── MESSAGE HANDLER ─────────────────────────────────────────────────────────
-const activeGames = new Collection(); 
+client.on(“messageCreate”, async msg => {
+if (msg.author.bot) return;
+const content = msg.content.trim();
+const lower = content.toLowerCase();
 
-client.on("messageCreate", async msg => {
-  if (msg.author.bot) return;
-  const contentClean = msg.content.trim().toLowerCase();
+if ([”!menu”, “!لعب”, “لعب”, “!play”].includes(lower)) {
+return msg.reply({ embeds: [logoEmbed()], components: startRow() });
+}
 
-  // أمر التشغيل بالعامية العربي
-  if (["لعب-", "!لعب", "لعب", "play"].includes(contentClean)) {
-    return msg.reply({ embeds: [buildLobbyEmbed()], components: startComponent() });
-  }
+// فحص التحدي الجماعي
+if (activeMatch && activeMatch.type === “group”) {
+if (matchAns(content, activeMatch.answers)) {
+const winner = getPlayer(msg.author.id, msg.author.username);
+winner.pts += 100;
+activeMatch = null;
+if (matchTimeout) clearTimeout(matchTimeout);
+return msg.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🏆 فاز بالتحدي!”).setDescription(”**” + msg.author.username + “** جاوب اول واحد!\n💰 **+100 نقطة**”)] });
+}
+}
 
-  // فحص إجابة المواجهة الجماعية
-  if (activeMatch && activeMatch.type === "group" && matchAnswer(msg.content, activeMatch.answers)) {
-    const winner = getPlayer(msg.author.id, msg.author.username);
-    winner.pts += 100; activeMatch = null; lobbyQueue.clear(); if (matchTimeout) clearTimeout(matchTimeout);
-    return msg.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏆 انتصار جماعي!").setDescription(`⚡ **${msg.author.username}** سحق الجميع وجاوب أول واحد صح!\n💰 كسب: \`+100\` نقطة رصيد!`)] });
-  }
+// فحص مافيا الشات - البحث عن منشن أو اسم الهدف
+if (activeMatch && activeMatch.type === “mafia”) {
+const mentionMatch = msg.mentions.users.has(activeMatch.targetId);
+const nameMatch = lower.includes(activeMatch.targetName.toLowerCase());
+if (mentionMatch || nameMatch) {
+const hero = getPlayer(msg.author.id, msg.author.username);
+const target = getPlayer(activeMatch.targetId, activeMatch.targetName);
+hero.pts += 50;
+target.pts = Math.max(0, target.pts - 40);
+activeMatch = null;
+if (matchTimeout) clearTimeout(matchTimeout);
+return msg.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🕵️ تم كشف المافيا!”).setDescription(”**” + msg.author.username + “** كشف الجاسوس!\n\n💰 الكاشف: **+50** نقطة\n📉 المافيا **” + activeMatch.targetName + “**: **-40** نقطة”)] });
+}
+}
 
-  // فحص إجابة مافيا الشات (اسم الشخص المكتوب)
-  if (activeMatch && activeMatch.type === "mafia") {
-    if (msg.content.includes(activeMatch.targetId)) {
-      const hero = getPlayer(msg.author.id, msg.author.username);
-      const mafiaPlayer = getPlayer(activeMatch.targetId, activeMatch.targetName);
-      hero.pts += 50; mafiaPlayer.pts = Math.max(0, mafiaPlayer.pts - 40); activeMatch = null; if (matchTimeout) clearTimeout(matchTimeout);
-      return msg.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🕵️ تم شنق المافيا!").setDescription(`⚔️ **${msg.author.username}** كشف الجاسوس وكبسه وصادره!\n💰 الممسك كسب \`+50\` رصيد • 💀 المافيا خسر \`-40\` رصيد.`)] });
-    }
-  }
+// فحص الالعاب الفردية
+const game = activeGames.get(msg.channel.id);
+if (!game) return;
 
-  const game = activeGames.get(msg.channel.id);
-  if (!game) return;
-
-  // فحص الألعاب الفردية
-  if ((game.type === "trivia" || game.type === "complete" || game.type === "scratch") && matchAnswer(msg.content, game.data.answers)) {
-    activeGames.delete(msg.channel.id);
-    const p = getPlayer(msg.author.id, msg.author.username);
-    p.pts += 40;
-    return msg.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🎉 كفو صح!").setDescription(`> **${msg.author.username}** جابها صح!\n💰 **رصيدك الحالي:** \`${p.pts}\``)] });
-  }
+if (matchAns(content, game.data.answers || [game.data.answer])) {
+activeGames.delete(msg.channel.id);
+const p = getPlayer(msg.author.id, msg.author.username);
+p.pts += 40;
+return msg.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“✅ صحيح!”).setDescription(”**” + msg.author.username + “** جابها!\n💰 **رصيدك:** `" + p.pts + "` نقطة”)], components: retryRow(“g_” + game.type) });
+}
 });
 
 // ─── INTERACTION HANDLER ─────────────────────────────────────────────────────
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isButton()) return;
-  const id = interaction.customId;
-  const p = getPlayer(interaction.user.id, interaction.user.username);
+client.on(“interactionCreate”, async interaction => {
+if (!interaction.isButton()) return;
+const id = interaction.customId;
+const p = getPlayer(interaction.user.id, interaction.user.username);
 
-  // فتح قائمة الألعاب (التحويل التفاعلي)
-  if (id === "open_games_menu" || id === "go_lobby") {
-    return interaction.update({ content: `**طابور الانتظار:** \`[${lobbyQueue.size}/4]\``, embeds: [buildLobbyEmbed()], components: lobbyComponents() });
-  }
+// القائمة الرئيسية
+if (id === “open_menu” || id === “go_menu”) {
+return interaction.update({
+content: “**طابور:** `[" + lobbyQueue.size + "/4]`”,
+embeds: [logoEmbed()],
+components: menuRows()
+});
+}
 
-  // 1. تحدي فردي عشوائي
-  if (id === "game_trivia") {
-    if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ الروم محجوز بتحدي نشط حالياً!", ephemeral: true });
-    const pool = Math.random() > 0.5 ? dbdQuestions : scratchMarksGames; // تنويع عشوائي مدمج مع تتبع الأثر
-    const q = pool[Math.floor(Math.random() * pool.length)];
-    activeGames.set(interaction.channel.id, { type: pool === dbdQuestions ? "trivia" : "scratch", data: q });
-    setTimeout(() => { activeGames.delete(interaction.channel.id); }, 30000);
+// تحدي فردي
+if (id === “g_trivia”) {
+if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: “⚠️ في لعبة شغالة الحين!”, ephemeral: true });
+const q = rand(dbdQuestions);
+activeGames.set(interaction.channel.id, { type: “trivia”, data: q });
+setTimeout(() => {
+if (activeGames.has(interaction.channel.id)) {
+activeGames.delete(interaction.channel.id);
+interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⏱️ انتهى الوقت!”).setDescription(“الجواب: **” + (q.answers ? q.answers[0] : q.answer) + “**”)] });
+}
+}, 30000);
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🧠 تحدي فردي!”).setDescription(”### “ + q.q).setFooter({ text: “اكتب الجواب! عندك 30 ثانية” })] });
+}
 
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(pool === dbdQuestions ? "🧠 تحدي فكري فردي" : "🔍 تحدي تتبع الأثر والخدوش").setDescription(`### ${q.q || q.text}`)], components: postGameButtons("game_trivia") });
-  }
+// كلمة مفككة
+if (id === “g_scramble”) {
+if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: “⚠️ في لعبة شغالة الحين!”, ephemeral: true });
+const w = rand(scrambledWords);
+activeGames.set(interaction.channel.id, { type: “scramble”, data: { answers: [w.answer], …w } });
+setTimeout(() => {
+if (activeGames.has(interaction.channel.id)) {
+activeGames.delete(interaction.channel.id);
+interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⏱️ انتهى الوقت!”).setDescription(“الجواب: **” + w.answer + “**”)] });
+}
+}, 45000);
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🔤 كلمة مفككة!”).setDescription(”### رتب الحروف:\n# `" + w.scrambled + "`”).addFields({ name: “💡 تلميح”, value: “||” + w.hint + “||” }).setFooter({ text: “اكتب الكلمة الصحيحة! عندك 45 ثانية” })] });
+}
 
-  // 2. لعبة كمل الكلمة
-  if (id === "game_complete") {
-    if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: "⚠️ الروم مشغول بتحدي آخر!", ephemeral: true });
-    const c = completeWordGames[Math.floor(Math.random() * completeWordGames.length)];
-    activeGames.set(interaction.channel.id, { type: "complete", data: c });
-    setTimeout(() => { activeGames.delete(interaction.channel.id); }, 30000);
+// حرف ناقص
+if (id === “g_missing”) {
+if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: “⚠️ في لعبة شغالة الحين!”, ephemeral: true });
+const w = rand(missingLetterWords);
+activeGames.set(interaction.channel.id, { type: “missing”, data: { answers: [w.answer], …w } });
+setTimeout(() => {
+if (activeGames.has(interaction.channel.id)) {
+activeGames.delete(interaction.channel.id);
+interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⏱️ انتهى الوقت!”).setDescription(“الجواب: **” + w.answer + “**”)] });
+}
+}, 30000);
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“❓ حرف ناقص!”).setDescription(”### اكمل الكلمة:\n# `" + w.blanked + "`”).addFields({ name: “💡 تلميح”, value: “||” + w.hint + “||” }).setFooter({ text: “اكتب الكلمة الكاملة! عندك 30 ثانية” })] });
+}
 
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("📝 لعبة كمل الكلمة الممسوحة").setDescription(`### اكمل الفراغ التالي لاسم البيرك:\n\n# \`${c.display}\``).addFields({ name: "💡 تلميح مساعد", value: `||${c.hint}||` })], components: postGameButtons("game_complete") });
-  }
+// كمل الكلمة
+if (id === “g_complete”) {
+if (activeGames.has(interaction.channel.id)) return interaction.reply({ content: “⚠️ في لعبة شغالة الحين!”, ephemeral: true });
+const w = rand(completeWordGames);
+activeGames.set(interaction.channel.id, { type: “complete”, data: w });
+setTimeout(() => {
+if (activeGames.has(interaction.channel.id)) {
+activeGames.delete(interaction.channel.id);
+interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⏱️ انتهى الوقت!”).setDescription(“الجواب: **” + w.answers[0] + “**”)] });
+}
+}, 30000);
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“📝 كمل الكلمة!”).setDescription(”### اكمل اسم البيرك:\n# `" + w.display + "`”).addFields({ name: “💡 تلميح”, value: “||” + w.hint + “||” }).setFooter({ text: “اكتب الاسم الكامل! عندك 30 ثانية” })] });
+}
 
-  // 3. لعبة المربع الصح (Lucky Box)
-  if (id === "game_luckybox") {
-    const targetBox = Math.floor(Math.random() * 3);
-    const row = new ActionRowBuilder().addComponents(
-      [0, 1, 2].map(i => new ButtonBuilder().setCustomId(`box_${i}_${targetBox}_${interaction.user.id}`).setLabel(`📦 صندوق ${i+1}`).setStyle(ButtonStyle.Secondary))
-    );
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("📦 لعبة الصندوق والمربع الصح").setDescription("قدامك 3 صناديق مقفلة بالضباب؛ واحد فيه مفتاح يفتح رصيدك، وواحد فيه فخ ترابر يطير نقاطك، وواحد فاضي! اختر بحظك:")], components: [row], ephemeral: true });
-  }
+// روليت الكيان
+if (id === “g_roulette”) {
+if (p.pts < 30) return interaction.reply({ content: “❌ رصيدك اقل من 30! ما تقدر تخاطر.”, ephemeral: true });
+const win = Math.random() > 0.5;
+if (win) {
+p.pts += 60;
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🎲 روليت: هربت!”).setDescription(“نجحت في الهروب!\n💰 **+60 نقطة** — رصيدك: `" + p.pts + "`”)], components: retryRow(“g_roulette”) });
+} else {
+p.pts -= 30;
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“💀 روليت: علقوك!”).setDescription(“تم تعليقك على الهوك.\n📉 **-30 نقطة** — رصيدك: `" + p.pts + "`”)], components: retryRow(“g_roulette”) });
+}
+}
 
-  if (id.startsWith("box_")) {
-    const [, clicked, target, userId] = id.split("_");
-    if (interaction.user.id !== userId) return interaction.reply({ content: "❌ مو صندوقك!", ephemeral: true });
-    if (clicked === target) {
-      p.pts += 50;
-      return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🔑 لقيت المفتاح وهربت!").setDescription("حظك حريقة! فتحت المربع الصح ولقيت مفتاح الهروب الأسطوري.\n\n💰 **كسبت:** `+50` نقطة.")], components: postGameButtons("game_luckybox") });
-    } else if (Math.random() > 0.5) {
-      p.pts = Math.max(0, p.pts - 30);
-      return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🪤 كلاك! فخ ترابر").setDescription("سوء حظ فادح! المربع هذا كان فيه فخ حديدي مسك رجلك وعورك.\n\n📉 **خسرت:** `-30` نقطة.")], components: postGameButtons("game_luckybox") });
-    } else {
-      return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("💨 صندوق فارغ محبط").setDescription("فتحت الصندوق وطلع غبار وما فيه أي شيء يفيدك.")], components: postGameButtons("game_luckybox") });
-    }
-  }
+// فحص المهارة
+if (id === “g_skillcheck”) {
+const target = Math.floor(Math.random() * 4);
+const uid = interaction.user.id;
+const row = new ActionRowBuilder().addComponents(
+[0, 1, 2, 3].map(i => new ButtonBuilder()
+.setCustomId(“sk_” + i + “*” + target + “*” + uid)
+.setLabel(i === target ? “🎯” : “⚙️”)
+.setStyle(ButtonStyle.Secondary)
+)
+);
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🎯 فحص المهارة!”).setDescription(“اضغط على 🎯 بسرعة!”)], components: [row], ephemeral: true });
+}
 
-  // 4. لعبة مافيا الشات (The Fog Mafia)
-  if (id === "game_mafia") {
-    if (activeMatch) return interaction.reply({ content: "⚠️ في مواجهة أو تحدي شغال بالشات حالياً!", ephemeral: true });
-    
-    // سحب أعضاء أونلاين عشوائيين من السيرفر كهدف للمافيا
-    const members = await interaction.guild.members.fetch();
-    const activeMembers = members.filter(m => !m.user.bot);
-    if (activeMembers.size < 1) return interaction.reply({ content: "❌ ما في أعضاء كافيين بالسيرفر لتشغيل المافيا الحين!", ephemeral: true });
-    
-    const randomTarget = activeMembers.random().user;
-    activeMatch = { type: "mafia", targetId: randomTarget.id, targetName: randomTarget.username };
+if (id.startsWith(“sk_”)) {
+const parts = id.split(”_”);
+const clicked = parts[1], target = parts[2], uid = parts[3];
+if (interaction.user.id !== uid) return interaction.reply({ content: “❌ مو فحصك!”, ephemeral: true });
+if (clicked === target) {
+p.pts += 35;
+return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“✅ نجحت!”).setDescription(“💰 **+35 نقطة** — رصيدك: `" + p.pts + "`”)], components: retryRow(“g_skillcheck”) });
+} else {
+p.pts = Math.max(0, p.pts - 20);
+return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“💥 فشلت!”).setDescription(“📉 **-20 نقطة** — رصيدك: `" + p.pts + "`”)], components: retryRow(“g_skillcheck”) });
+}
+}
 
-    matchTimeout = setTimeout(() => { activeMatch = null; }, 30000);
+// صندوق الحظ
+if (id === “g_luckybox”) {
+const target = Math.floor(Math.random() * 3);
+const uid = interaction.user.id;
+const row = new ActionRowBuilder().addComponents(
+[0, 1, 2].map(i => new ButtonBuilder()
+.setCustomId(“box_” + i + “*” + target + “*” + uid)
+.setLabel(“📦 صندوق “ + (i + 1))
+.setStyle(ButtonStyle.Secondary)
+)
+);
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“📦 صندوق الحظ!”).setDescription(“واحد فيه مفتاح هروب، واحد فيه فخ ترابر، وواحد فاضي!\nاختر:”)], components: [row], ephemeral: true });
+}
 
-    return interaction.reply({ content: `🚨 **انطلقت لعبة مافيا الشات والعملاء!**\nالكيان اختار عضو عشوائي وخلاه جاسوس ومافيا الحين بالروم، أسرع واحد يكتب منشن العضو هذا أو يحط الآيدي حقه بالشات يمسكه ويشنقه وياخذ رصيده!\n\n> **💡 تلميح الجاسوس:** أول حرف من اسمه هو (\` ${randomTarget.username[0]} \`) وعنده 30 ثانية يختفي! ⏳` });
-  }
+if (id.startsWith(“box_”)) {
+const parts = id.split(”_”);
+const clicked = parts[1], target = parts[2], uid = parts[3];
+if (interaction.user.id !== uid) return interaction.reply({ content: “❌ مو صندوقك!”, ephemeral: true });
+if (clicked === target) {
+p.pts += 50;
+return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🔑 لقيت المفتاح!”).setDescription(“هربت! 💰 **+50 نقطة** — رصيدك: `" + p.pts + "`”)], components: retryRow(“g_luckybox”) });
+} else if (Math.random() > 0.5) {
+p.pts = Math.max(0, p.pts - 30);
+return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🪤 فخ ترابر!”).setDescription(“كلاك! 📉 **-30 نقطة** — رصيدك: `" + p.pts + "`”)], components: retryRow(“g_luckybox”) });
+} else {
+return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“💨 صندوق فاضي!”).setDescription(“ما فيه شيء هذه المرة.”)], components: retryRow(“g_luckybox”) });
+}
+}
 
-  // 5. فحص المهارة (ثانية ونصف تفاعلي)
-  if (id === "game_skillcheck") {
-    const checkTypes = [
-      { type: "gen", title: "🛠️ !! SKILL CHECK — تصليح مولد", desc: "اضغط على الهدف `🎯`!", winPts: 35, losePts: 20 },
-      { type: "heal", title: "🩸 !! SKILL CHECK — تداوي وشفاء", desc: "اضغط على `🎯` عشان ما ينزف خويك!", winPts: 40, losePts: 25 }
-    ];
-    const chosenGame = checkTypes[Math.floor(Math.random() * checkTypes.length)];
-    const randZone = Math.floor(Math.random() * 4); 
-    const row = new ActionRowBuilder().addComponents([0, 1, 2, 3].map(i => new ButtonBuilder().setCustomId(`sk_${i}_${randZone}_${interaction.user.id}_${chosenGame.type}_active`).setLabel(i === randZone ? "🎯" : "⚙️").setStyle(ButtonStyle.Secondary)));
+// مافيا الشات - مصلّحة
+if (id === “g_mafia”) {
+if (activeMatch) return interaction.reply({ content: “⚠️ في تحدي نشط الحين!”, ephemeral: true });
+try {
+const members = await interaction.guild.members.fetch();
+const humans = members.filter(m => !m.user.bot && m.user.id !== interaction.user.id);
+if (humans.size < 2) return interaction.reply({ content: “❌ ما في اعضاء كافيين!”, ephemeral: true });
+const target = humans.random().user;
+activeMatch = { type: “mafia”, targetId: target.id, targetName: target.username };
+matchTimeout = setTimeout(() => {
+if (activeMatch && activeMatch.type === “mafia”) {
+activeMatch = null;
+interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⏱️ افلت الجاسوس!”).setDescription(“انتهى الوقت! الجاسوس كان: **” + target.username + “**”)] });
+}
+}, 30000);
+return interaction.reply({
+content: “🚨 **انطلقت مافيا الشات!**\nفي جاسوس مختفي بالروم! اول حرف من اسمه: **`" + target.username[0].toUpperCase() + "`**\nاكتب منشن او اسم الجاسوس عشان تمسكه وتاخذ نقاطه!\n⏳ عندك 30 ثانية!”
+});
+} catch (err) {
+return interaction.reply({ content: “❌ حدث خطأ في تشغيل المافيا.”, ephemeral: true });
+}
+}
 
-    await interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(chosenGame.title).setDescription(`⚡ **انتبه!**\n\n> ${chosenGame.desc}`)], components: [row], ephemeral: true, fetchReply: true });
-    setTimeout(async () => {
-      try {
-        const checkFetch = await interaction.fetchReply();
-        if (checkFetch && checkFetch.components.length > 0 && checkFetch.components[0].components[0].customId.endsWith("_active")) {
-          p.pts = Math.max(0, p.pts - chosenGame.losePts);
-          await interaction.editReply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 انتهى الوقت").setDescription(`⏱️ مرت الثانية والنصف وفشل الفحص، ونقصت نقاطك \`-${chosenGame.losePts}\`.`)], components: postGameButtons("game_skillcheck") });
-        }
-      } catch (err) {}
-    }, 1500);
-    return;
-  }
+// تحدي جماعي
+if (id === “g_queue”) {
+if (activeMatch) return interaction.reply({ content: “⚠️ في تحدي نشط الحين!”, ephemeral: true });
+if (lobbyQueue.has(interaction.user.id)) return interaction.reply({ content: “⚠️ انت مسجل بالفعل!”, ephemeral: true });
+lobbyQueue.add(interaction.user.id);
+if (lobbyQueue.size >= 4) {
+const q = rand(dbdQuestions);
+activeMatch = { type: “group”, …q };
+lobbyQueue.clear();
+matchTimeout = setTimeout(() => {
+if (activeMatch) {
+activeMatch = null;
+interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⏱️ انتهى التحدي!”).setDescription(“الجواب: **” + q.answers[0] + “**”)] });
+}
+}, 60000);
+await interaction.update({ content: “**[4/4] اكتمل الطابور!**”, embeds: [logoEmbed()], components: menuRows() });
+return interaction.channel.send({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“⚔️ بدأت المواجهة الجماعية!”).setDescription(”### “ + q.q + “\n\nاسرع واحد يجاوب ياخذ **100 نقطة**! عندكم 60 ثانية ⏳”)] });
+}
+return interaction.update({ content: “**طابور:** `[" + lobbyQueue.size + "/4]` — باقي “ + (4 - lobbyQueue.size) + “ لاعبين…”, embeds: [logoEmbed()], components: menuRows() });
+}
 
-  if (id.startsWith("sk_")) {
-    const [, clicked, target, userId, gameType, status] = id.split("_");
-    if (interaction.user.id !== userId) return interaction.reply({ content: "❌ ليس فحصك!", ephemeral: true });
-    if (status !== "active") return; 
-    let winPts = gameType === "gen" ? 35 : 40, losePts = gameType === "gen" ? 20 : 25;
-    if (clicked === target) {
-      p.pts += winPts; return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 نجاح سريع!").setDescription(`💰 **الجوائز:** \`+${winPts}\` نقطة رصيد.`)], components: postGameButtons("game_skillcheck") });
-    } else {
-      p.pts = Math.max(0, p.pts - losePts); return interaction.update({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("💥 فشل وانفجار!").setDescription(`📉 **العقوبة:** \`-${losePts}\` من رصيدك.`)], components: postGameButtons("game_skillcheck") });
-    }
-  }
-
-  // 6. روليت الكيان
-  if (id === "game_roulette") {
-    if (p.pts < 30) return interaction.reply({ content: "❌ رصيدك منخفض جداً للمخاطرة (تحتاج 30 نقطة)!", ephemeral: true });
-    const win = Math.random() > 0.55; 
-    if (win) {
-      p.pts += 60; return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🎲 روليت: هروب!").setDescription(`🏃 نجحت في الهروب!\n📈 **رصيدك الحالي:** \`${p.pts}\``)], components: postGameButtons("game_roulette") });
-    } else {
-      p.pts -= 30; return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("💀 روليت: تضحية!").setDescription(`🪝 تم تعليقك على الهوك.\n📉 **رصيدك الحالي:** \`${p.pts}\``)], components: postGameButtons("game_roulette") });
-    }
-  }
-
-  // طابور الـ 4 لاعبين الجماعي
-  if (id === "queue_join") {
-    if (lobbyQueue.has(interaction.user.id)) return interaction.reply({ content: "⚠️ مسجل بالفعل بالطابور!", ephemeral: true });
-    if (activeMatch) return interaction.reply({ content: "⚠️ في تحدي جماعي نشط بالشات حالياً!", ephemeral: true });
-
-    lobbyQueue.add(interaction.user.id);
-    const needed = 4 - lobbyQueue.size;
-
-    if (lobbyQueue.size === 4) {
-      let q = dbdQuestions[Math.floor(Math.random() * dbdQuestions.length)];
-      activeMatch = { type: "group", ...q }; 
-      const endTimestamp = Math.floor((Date.now() + 60000) / 1000);
-      await interaction.update({ content: `**اللاعبين:** \`[4/4]\`\n🚨 **بدأت المواجهة!**`, embeds: [buildLobbyEmbed()], components: lobbyComponents() });
-      matchTimeout = setTimeout(() => { if (activeMatch && activeMatch.type === "group") { activeMatch = null; lobbyQueue.clear(); interaction.channel.send("⏱️ انتهى وقت التحدي الجماعي."); } }, 60000);
-
-      return interaction.channel.send({ content: `🚨 **انطلقت مواجهة الـ 4 لاعبين!**\nينتهي التحدي: <t:${endTimestamp}:R> ⏳`, embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("⚔️ الأسْرَع بالشات يقتنص الـ 100 نقطة:").setDescription(`### ${q.q}`)] });
-    }
-
-    return interaction.update({ content: `**طابور الانتظار:** \`[${lobbyQueue.size}/4]\`\n⏳ باقي [ ${needed} ] لاعبين وتبدأ المواجهة الجماعية...`, embeds: [buildLobbyEmbed()], components: lobbyComponents() });
-  }
-
-  // لوحة الصدارة
-  if (id === "game_leaderboard") {
-    const sorted = [...db.values()].sort((a, b) => b.pts - a.pts).slice(0, 5);
-    const lbDescription = sorted.length ? sorted.map((pl, idx) => `> **${idx + 1}. ${pl.name}** — \`${pl.pts} نقطة\` (${pl.rank})`).join("\n") : "📭 القائمة فارغة حالياً.";
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle("🏆 لوحة أساطير الضباب").setDescription(lbDescription)], components: returnButton() });
-  }
+// لوحة الصدارة
+if (id === “g_lb”) {
+const sorted = […db.values()].sort((a, b) => b.pts - a.pts).slice(0, 10);
+const medals = [“🥇”, “🥈”, “🥉”];
+const desc = sorted.length
+? sorted.map((pl, i) => (medals[i] || (i + 1) + “.”) + “ **” + pl.name + “** — `" + pl.pts + "` نقطة”).join(”\n”)
+: “📭 القائمة فارغة!”;
+return interaction.reply({ embeds: [new EmbedBuilder().setColor(DISCORD_BG).setTitle(“🏆 اساطير الضباب”).setDescription(desc)], ephemeral: true });
+}
 });
 
-client.once("ready", () => { console.log(`🚀 SOUL DBD PLATFORM SYSTEM IS LIVE: ${client.user.tag}`); });
+client.once(“ready”, () => {
+console.log(“SOUL DBD Bot Ready! “ + client.user.tag);
+client.user.setActivity(“Dead by Daylight | !menu”, { type: 0 });
+});
+
 client.login(process.env.DISCORD_TOKEN);
